@@ -483,6 +483,7 @@
                 <th class="py-2.5 px-3 font-semibold">Продукт</th>
                 <th class="py-2.5 px-3 font-semibold">Категория</th>
                 <th class="py-2.5 px-3 font-semibold">Фасовка</th>
+                <th class="py-2.5 px-3 font-semibold">Сырой → Готовый</th>
                 <th class="py-2.5 px-3 font-semibold">Пятёрочка</th>
                 <th class="py-2.5 px-3 font-semibold">Магнит</th>
                 <th class="py-2.5 px-3 font-semibold">Лента</th>
@@ -604,47 +605,58 @@
     // ==========================================
     // 2. PRODUCT DATABASE WITH STORE PRICES (in RUB)
     // ==========================================
+    const DEFAULT_COOK_FACTORS = {
+      meat: { factor: 0.72, note: 'ужарка/уварка −28%' },
+      fish: { factor: 0.78, note: 'ужарка/на пару −22%' },
+      dairy: { factor: 0.95, note: 'почти без потерь' },
+      grains: { factor: 2.5, note: 'разварка ×2.5' },
+      legumes: { factor: 2.1, note: 'разварка ×2.1' },
+      veg: { factor: 0.85, note: 'тушение/чистка −15%' },
+      fruit: { factor: 1.0, note: 'свежие 1:1' },
+      pantry: { factor: 1.0, note: 'без изменений 1:1' }
+    };
+
     const INITIAL_PRODUCTS = [
       // Meat & Poultry
-      { id: 'chicken_breast', name: 'Куриное филе', cat: 'meat', unit: 'г', packSize: 600, allergens: [], prices: { pyaterochka: 239, magnit: 245, lenta: 229, auchan: 225, perekrestok: 259, vkusvill: 295 } },
-      { id: 'turkey_fillet', name: 'Филе индейки', cat: 'meat', unit: 'г', packSize: 500, allergens: [], prices: { pyaterochka: 269, magnit: 275, lenta: 255, auchan: 249, perekrestok: 289, vkusvill: 320 } },
-      { id: 'beef_mince', name: 'Фарш говяжий постный', cat: 'meat', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 249, magnit: 259, lenta: 239, auchan: 235, perekrestok: 279, vkusvill: 315 } },
+      { id: 'chicken_breast', name: 'Куриное филе', cat: 'meat', unit: 'г', packSize: 600, cookFactor: 0.72, cookNote: 'ужарка/уварка −28%', allergens: [], prices: { pyaterochka: 239, magnit: 245, lenta: 229, auchan: 225, perekrestok: 259, vkusvill: 295 } },
+      { id: 'turkey_fillet', name: 'Филе индейки', cat: 'meat', unit: 'г', packSize: 500, cookFactor: 0.73, cookNote: 'ужарка/тушение −27%', allergens: [], prices: { pyaterochka: 269, magnit: 275, lenta: 255, auchan: 249, perekrestok: 289, vkusvill: 320 } },
+      { id: 'beef_mince', name: 'Фарш говяжий постный', cat: 'meat', unit: 'г', packSize: 400, cookFactor: 0.70, cookNote: 'ужарка −30%', allergens: [], prices: { pyaterochka: 249, magnit: 259, lenta: 239, auchan: 235, perekrestok: 279, vkusvill: 315 } },
       // Fish & Seafood
-      { id: 'white_fish', name: 'Филе минтая / трески', cat: 'fish', unit: 'г', packSize: 600, allergens: ['fish'], prices: { pyaterochka: 249, magnit: 239, lenta: 229, auchan: 219, perekrestok: 269, vkusvill: 310 } },
-      { id: 'pink_salmon', name: 'Горбуша / красная рыба', cat: 'fish', unit: 'г', packSize: 500, allergens: ['fish'], prices: { pyaterochka: 329, magnit: 339, lenta: 315, auchan: 309, perekrestok: 359, vkusvill: 395 } },
-      { id: 'shrimp', name: 'Креветки очищенные', cat: 'fish', unit: 'г', packSize: 400, allergens: ['seafood'], prices: { pyaterochka: 399, magnit: 410, lenta: 379, auchan: 369, perekrestok: 429, vkusvill: 490 } },
+      { id: 'white_fish', name: 'Филе минтая / трески', cat: 'fish', unit: 'г', packSize: 600, cookFactor: 0.78, cookNote: 'запекание −22%', allergens: ['fish'], prices: { pyaterochka: 249, magnit: 239, lenta: 229, auchan: 219, perekrestok: 269, vkusvill: 310 } },
+      { id: 'pink_salmon', name: 'Горбуша / красная рыба', cat: 'fish', unit: 'г', packSize: 500, cookFactor: 0.80, cookNote: 'на пару/гриле −20%', allergens: ['fish'], prices: { pyaterochka: 329, magnit: 339, lenta: 315, auchan: 309, perekrestok: 359, vkusvill: 395 } },
+      { id: 'shrimp', name: 'Креветки очищенные', cat: 'fish', unit: 'г', packSize: 400, cookFactor: 0.75, cookNote: 'отваривание −25%', allergens: ['seafood'], prices: { pyaterochka: 399, magnit: 410, lenta: 379, auchan: 369, perekrestok: 429, vkusvill: 490 } },
       // Dairy & Eggs
-      { id: 'eggs', name: 'Яйца куриные С1 (10 шт)', cat: 'dairy', unit: 'г', packSize: 550, allergens: ['eggs'], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 95, perekrestok: 119, vkusvill: 135 } },
-      { id: 'cottage_cheese', name: 'Творог 5%', cat: 'dairy', unit: 'г', packSize: 400, allergens: ['lactose'], prices: { pyaterochka: 159, magnit: 155, lenta: 149, auchan: 145, perekrestok: 175, vkusvill: 195 } },
-      { id: 'milk', name: 'Молоко 2.5%', cat: 'dairy', unit: 'мл', packSize: 950, allergens: ['lactose'], prices: { pyaterochka: 79, magnit: 76, lenta: 74, auchan: 72, perekrestok: 89, vkusvill: 98 } },
-      { id: 'plant_milk', name: 'Овсяное / кокосовое молоко', cat: 'pantry', unit: 'мл', packSize: 1000, allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 145 } },
-      { id: 'cheese', name: 'Сыр полутвёрдый', cat: 'dairy', unit: 'г', packSize: 250, allergens: ['lactose'], prices: { pyaterochka: 189, magnit: 195, lenta: 179, auchan: 175, perekrestok: 215, vkusvill: 245 } },
-      { id: 'greek_yogurt', name: 'Йогурт натуральный / сметана', cat: 'dairy', unit: 'г', packSize: 300, allergens: ['lactose'], prices: { pyaterochka: 85, magnit: 89, lenta: 79, auchan: 76, perekrestok: 95, vkusvill: 110 } },
+      { id: 'eggs', name: 'Яйца куриные С1 (10 шт)', cat: 'dairy', unit: 'г', packSize: 550, cookFactor: 0.90, cookNote: 'омлет/варка −10%', allergens: ['eggs'], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 95, perekrestok: 119, vkusvill: 135 } },
+      { id: 'cottage_cheese', name: 'Творог 5%', cat: 'dairy', unit: 'г', packSize: 400, cookFactor: 0.92, cookNote: 'сырники −8% / свежий 1:1', allergens: ['lactose'], prices: { pyaterochka: 159, magnit: 155, lenta: 149, auchan: 145, perekrestok: 175, vkusvill: 195 } },
+      { id: 'milk', name: 'Молоко 2.5%', cat: 'dairy', unit: 'мл', packSize: 950, cookFactor: 0.95, cookNote: 'выпаривание −5%', allergens: ['lactose'], prices: { pyaterochka: 79, magnit: 76, lenta: 74, auchan: 72, perekrestok: 89, vkusvill: 98 } },
+      { id: 'plant_milk', name: 'Овсяное / кокосовое молоко', cat: 'pantry', unit: 'мл', packSize: 1000, cookFactor: 0.95, cookNote: 'выпаривание −5%', allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 145 } },
+      { id: 'cheese', name: 'Сыр полутвёрдый', cat: 'dairy', unit: 'г', packSize: 250, cookFactor: 1.0, cookNote: 'готовый продукт 1:1', allergens: ['lactose'], prices: { pyaterochka: 189, magnit: 195, lenta: 179, auchan: 175, perekrestok: 215, vkusvill: 245 } },
+      { id: 'greek_yogurt', name: 'Йогурт натуральный / сметана', cat: 'dairy', unit: 'г', packSize: 300, cookFactor: 1.0, cookNote: 'готовый продукт 1:1', allergens: ['lactose'], prices: { pyaterochka: 85, magnit: 89, lenta: 79, auchan: 76, perekrestok: 95, vkusvill: 110 } },
       // Grains & Pasta
-      { id: 'oats', name: 'Овсяные хлопья долгой варки', cat: 'grains', unit: 'г', packSize: 500, allergens: ['gluten'], prices: { pyaterochka: 65, magnit: 62, lenta: 59, auchan: 55, perekrestok: 75, vkusvill: 88 } },
-      { id: 'buckwheat', name: 'Гречневая крупа ядрица', cat: 'grains', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 105 } },
-      { id: 'rice', name: 'Рис длиннозёрный / бурый', cat: 'grains', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 94, perekrestok: 119, vkusvill: 135 } },
-      { id: 'pasta', name: 'Паста из твёрдых сортов', cat: 'grains', unit: 'г', packSize: 450, allergens: ['gluten'], prices: { pyaterochka: 75, magnit: 72, lenta: 68, auchan: 64, perekrestok: 89, vkusvill: 105 } },
-      { id: 'whole_bread', name: 'Хлеб цельнозерновой / тостовый', cat: 'grains', unit: 'г', packSize: 350, allergens: ['gluten'], prices: { pyaterochka: 59, magnit: 55, lenta: 54, auchan: 49, perekrestok: 69, vkusvill: 85 } },
+      { id: 'oats', name: 'Овсяные хлопья долгой варки', cat: 'grains', unit: 'г', packSize: 500, cookFactor: 3.0, cookNote: 'разварка в кашу ×3.0', allergens: ['gluten'], prices: { pyaterochka: 65, magnit: 62, lenta: 59, auchan: 55, perekrestok: 75, vkusvill: 88 } },
+      { id: 'buckwheat', name: 'Гречневая крупа ядрица', cat: 'grains', unit: 'г', packSize: 800, cookFactor: 2.5, cookNote: 'разварка ×2.5', allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 105 } },
+      { id: 'rice', name: 'Рис длиннозёрный / бурый', cat: 'grains', unit: 'г', packSize: 800, cookFactor: 2.6, cookNote: 'разварка ×2.6', allergens: [], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 94, perekrestok: 119, vkusvill: 135 } },
+      { id: 'pasta', name: 'Паста из твёрдых сортов', cat: 'grains', unit: 'г', packSize: 450, cookFactor: 2.3, cookNote: 'отваривание ×2.3', allergens: ['gluten'], prices: { pyaterochka: 75, magnit: 72, lenta: 68, auchan: 64, perekrestok: 89, vkusvill: 105 } },
+      { id: 'whole_bread', name: 'Хлеб цельнозерновой / тостовый', cat: 'grains', unit: 'г', packSize: 350, cookFactor: 0.95, cookNote: 'тост −5% / свежий 1:1', allergens: ['gluten'], prices: { pyaterochka: 59, magnit: 55, lenta: 54, auchan: 49, perekrestok: 69, vkusvill: 85 } },
       // Legumes & Nuts
-      { id: 'lentils', name: 'Чечевица красная / зелёная', cat: 'legumes', unit: 'г', packSize: 450, allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 140 } },
-      { id: 'chickpeas', name: 'Нут / фасоль консерв.', cat: 'legumes', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 89, magnit: 85, lenta: 79, auchan: 75, perekrestok: 99, vkusvill: 115 } },
-      { id: 'tofu', name: 'Тофу классический', cat: 'legumes', unit: 'г', packSize: 300, allergens: ['soy'], prices: { pyaterochka: 139, magnit: 145, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 165 } },
-      { id: 'nuts_mix', name: 'Миндаль / грецкий орех', cat: 'legumes', unit: 'г', packSize: 150, allergens: ['nuts'], prices: { pyaterochka: 169, magnit: 175, lenta: 159, auchan: 149, perekrestok: 189, vkusvill: 210 } },
+      { id: 'lentils', name: 'Чечевица красная / зелёная', cat: 'legumes', unit: 'г', packSize: 450, cookFactor: 2.4, cookNote: 'разварка ×2.4', allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 140 } },
+      { id: 'chickpeas', name: 'Нут / фасоль консерв.', cat: 'legumes', unit: 'г', packSize: 400, cookFactor: 1.0, cookNote: 'уже отварен 1:1', allergens: [], prices: { pyaterochka: 89, magnit: 85, lenta: 79, auchan: 75, perekrestok: 99, vkusvill: 115 } },
+      { id: 'tofu', name: 'Тофу классический', cat: 'legumes', unit: 'г', packSize: 300, cookFactor: 0.90, cookNote: 'обжарка −10%', allergens: ['soy'], prices: { pyaterochka: 139, magnit: 145, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 165 } },
+      { id: 'nuts_mix', name: 'Миндаль / грецкий орех', cat: 'legumes', unit: 'г', packSize: 150, cookFactor: 1.0, cookNote: 'готовый продукт 1:1', allergens: ['nuts'], prices: { pyaterochka: 169, magnit: 175, lenta: 159, auchan: 149, perekrestok: 189, vkusvill: 210 } },
       // Vegetables
-      { id: 'potatoes', name: 'Картофель свежий', cat: 'veg', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 45, magnit: 42, lenta: 39, auchan: 38, perekrestok: 55, vkusvill: 69 } },
-      { id: 'carrots_onion', name: 'Морковь и репчатый лук (набор)', cat: 'veg', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 55, magnit: 52, lenta: 49, auchan: 45, perekrestok: 65, vkusvill: 79 } },
-      { id: 'tomatoes_cucumbers', name: 'Томаты и огурцы свежие', cat: 'veg', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 169, magnit: 165, lenta: 155, auchan: 149, perekrestok: 189, vkusvill: 215 } },
-      { id: 'broccoli_veggies', name: 'Брокколи и овощная смесь', cat: 'veg', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 119, magnit: 125, lenta: 109, auchan: 99, perekrestok: 135, vkusvill: 155 } },
-      { id: 'cabbage_greens', name: 'Капуста белокочанная и зелень', cat: 'veg', unit: 'г', packSize: 900, allergens: [], prices: { pyaterochka: 69, magnit: 65, lenta: 59, auchan: 55, perekrestok: 79, vkusvill: 95 } },
+      { id: 'potatoes', name: 'Картофель свежий', cat: 'veg', unit: 'г', packSize: 1000, cookFactor: 0.85, cookNote: 'варка/запекание −15%', allergens: [], prices: { pyaterochka: 45, magnit: 42, lenta: 39, auchan: 38, perekrestok: 55, vkusvill: 69 } },
+      { id: 'carrots_onion', name: 'Морковь и репчатый лук (набор)', cat: 'veg', unit: 'г', packSize: 1000, cookFactor: 0.78, cookNote: 'пассеровка/тушение −22%', allergens: [], prices: { pyaterochka: 55, magnit: 52, lenta: 49, auchan: 45, perekrestok: 65, vkusvill: 79 } },
+      { id: 'tomatoes_cucumbers', name: 'Томаты и огурцы свежие', cat: 'veg', unit: 'г', packSize: 800, cookFactor: 0.95, cookNote: 'свежая нарезка ~1:1', allergens: [], prices: { pyaterochka: 169, magnit: 165, lenta: 155, auchan: 149, perekrestok: 189, vkusvill: 215 } },
+      { id: 'broccoli_veggies', name: 'Брокколи и овощная смесь', cat: 'veg', unit: 'г', packSize: 400, cookFactor: 0.86, cookNote: 'тушение/на пару −14%', allergens: [], prices: { pyaterochka: 119, magnit: 125, lenta: 109, auchan: 99, perekrestok: 135, vkusvill: 155 } },
+      { id: 'cabbage_greens', name: 'Капуста белокочанная и зелень', cat: 'veg', unit: 'г', packSize: 900, cookFactor: 0.82, cookNote: 'тушение/салат −18%', allergens: [], prices: { pyaterochka: 69, magnit: 65, lenta: 59, auchan: 55, perekrestok: 79, vkusvill: 95 } },
       // Fruits
-      { id: 'apples', name: 'Яблоки сезонные', cat: 'fruit', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 119, magnit: 115, lenta: 109, auchan: 99, perekrestok: 129, vkusvill: 149 } },
-      { id: 'bananas', name: 'Бананы спелые', cat: 'fruit', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 139, magnit: 135, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 160 } },
-      { id: 'citrus_fruit', name: 'Апельсины / мандарины', cat: 'fruit', unit: 'г', packSize: 800, allergens: ['citrus'], prices: { pyaterochka: 149, magnit: 145, lenta: 139, auchan: 135, perekrestok: 165, vkusvill: 185 } },
+      { id: 'apples', name: 'Яблоки сезонные', cat: 'fruit', unit: 'г', packSize: 1000, cookFactor: 1.0, cookNote: 'свежие 1:1', allergens: [], prices: { pyaterochka: 119, magnit: 115, lenta: 109, auchan: 99, perekrestok: 129, vkusvill: 149 } },
+      { id: 'bananas', name: 'Бананы спелые', cat: 'fruit', unit: 'г', packSize: 1000, cookFactor: 1.0, cookNote: 'свежие 1:1', allergens: [], prices: { pyaterochka: 139, magnit: 135, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 160 } },
+      { id: 'citrus_fruit', name: 'Апельсины / мандарины', cat: 'fruit', unit: 'г', packSize: 800, cookFactor: 1.0, cookNote: 'свежие 1:1', allergens: ['citrus'], prices: { pyaterochka: 149, magnit: 145, lenta: 139, auchan: 135, perekrestok: 165, vkusvill: 185 } },
       // Pantry
-      { id: 'oil_spices', name: 'Масло подсолнечное / оливковое', cat: 'pantry', unit: 'мл', packSize: 500, allergens: [], prices: { pyaterochka: 99, magnit: 95, lenta: 89, auchan: 85, perekrestok: 115, vkusvill: 135 } },
-      { id: 'tomato_paste', name: 'Томатная паста / протёртые томаты', cat: 'pantry', unit: 'г', packSize: 350, allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 99 } },
-      { id: 'honey_jar', name: 'Мёд цветочный натуральный', cat: 'pantry', unit: 'г', packSize: 250, allergens: ['honey'], prices: { pyaterochka: 149, magnit: 155, lenta: 139, auchan: 135, perekrestok: 169, vkusvill: 195 } }
+      { id: 'oil_spices', name: 'Масло подсолнечное / оливковое', cat: 'pantry', unit: 'мл', packSize: 500, cookFactor: 1.0, cookNote: 'впитывается в блюдо', allergens: [], prices: { pyaterochka: 99, magnit: 95, lenta: 89, auchan: 85, perekrestok: 115, vkusvill: 135 } },
+      { id: 'tomato_paste', name: 'Томатная паста / протёртые томаты', cat: 'pantry', unit: 'г', packSize: 350, cookFactor: 1.0, cookNote: 'основа соуса 1:1', allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 99 } },
+      { id: 'honey_jar', name: 'Мёд цветочный натуральный', cat: 'pantry', unit: 'г', packSize: 250, cookFactor: 1.0, cookNote: 'готовый продукт 1:1', allergens: ['honey'], prices: { pyaterochka: 149, magnit: 155, lenta: 139, auchan: 135, perekrestok: 169, vkusvill: 195 } }
     ];
 
     // ==========================================
@@ -1243,6 +1255,33 @@
       return state.products.find(p => p.id === prodId);
     }
 
+    function getCookedAmount(prod, rawAmount) {
+      if (!prod) return Math.round(rawAmount);
+      const factor = typeof prod.cookFactor === 'number'
+        ? prod.cookFactor
+        : (DEFAULT_COOK_FACTORS[prod.cat]?.factor || 1.0);
+      return Math.max(1, Math.round(rawAmount * factor));
+    }
+
+    function getCookNote(prod) {
+      if (!prod) return '1:1';
+      return prod.cookNote || (DEFAULT_COOK_FACTORS[prod.cat]?.note || '1:1');
+    }
+
+    function getRecipeWeightsPerPortion(recipe) {
+      let rawTotal = 0;
+      let cookedTotal = 0;
+      for (const ing of recipe.ingredients) {
+        const prod = getProductById(ing.prodId);
+        rawTotal += ing.amount;
+        cookedTotal += getCookedAmount(prod, ing.amount);
+      }
+      return {
+        rawPerPortion: Math.round(rawTotal),
+        cookedPerPortion: Math.round(cookedTotal)
+      };
+    }
+
     function getBestStoreForProduct(prod) {
       let bestStore = 'pyaterochka';
       let minPrice = Infinity;
@@ -1497,9 +1536,12 @@
           }
         }
 
+        const cookedNeededAmount = getCookedAmount(prod, neededAmount);
+
         items.push({
           prod,
           neededAmount: Math.round(neededAmount),
+          cookedNeededAmount: Math.round(cookedNeededAmount),
           packsNeeded,
           totalPurchasedAmount,
           leftoverAmount: Math.round(leftoverAmount),
@@ -1739,10 +1781,20 @@
           const card = document.createElement('div');
           card.className = 'rounded-xl border border-slate-200 p-3.5 flex flex-col justify-between bg-slate-50/60 hover:bg-white hover:shadow-sm transition';
 
-          const ingSummary = rec.ingredients.map(ing => {
+          const weights = getRecipeWeightsPerPortion(rec);
+          const ingRowsHtml = rec.ingredients.map(ing => {
             const p = getProductById(ing.prodId);
-            return p ? `${p.name} (${ing.amount * state.people} ${p.unit})` : '';
-          }).filter(Boolean).join(', ');
+            if (!p) return '';
+            const rawW = Math.round(ing.amount * state.people);
+            const cookedW = getCookedAmount(p, rawW);
+            const weightBadge = rawW === cookedW
+              ? `сыр./гот. ${rawW} ${p.unit}`
+              : `сыр. ${rawW} ${p.unit} → гот. ~${cookedW} ${p.unit}`;
+            return `<li class="flex items-baseline justify-between gap-1 py-0.5 border-b border-slate-100 last:border-0">
+              <span class="text-slate-700 truncate">${p.name}</span>
+              <span class="text-[10px] font-semibold text-slate-600 whitespace-nowrap">${weightBadge}</span>
+            </li>`;
+          }).filter(Boolean).join('');
 
           card.innerHTML = `
             <div>
@@ -1750,10 +1802,20 @@
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-md ${mInfo.badgeClass}">${mInfo.name}</span>
                 <span class="text-xs font-extrabold text-emerald-700">${formatMoney(portionRub)} / порц.</span>
               </div>
-              <h4 class="text-sm font-bold text-slate-900 leading-snug mb-1.5">${rec.title}</h4>
-              <p class="text-[11px] text-slate-500 line-clamp-2 mb-3">${ingSummary}</p>
+              <h4 class="text-sm font-bold text-slate-900 leading-snug mb-2">${rec.title}</h4>
+              <div class="bg-white rounded-lg p-2 border border-slate-200/80 mb-2.5">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
+                  <span>Продукт (${state.people} перс.)</span>
+                  <span>Сырой → Готовый</span>
+                </div>
+                <ul class="text-[11px] space-y-0.5">${ingRowsHtml}</ul>
+              </div>
             </div>
             <div class="pt-2 border-t border-slate-200/80 space-y-2">
+              <div class="flex items-center justify-between text-[11px] bg-emerald-50/80 text-emerald-900 px-2 py-1 rounded-md font-semibold">
+                <span>⚖️ 1 порция:</span>
+                <span>сыр. ${weights.rawPerPortion} г → гот. ~${weights.cookedPerPortion} г</span>
+              </div>
               <div class="flex items-center justify-between text-[11px] text-slate-600 font-medium">
                 <span>🔥 ${rec.kcal} ккал</span>
                 <span>Б:${rec.protein} Ж:${rec.fat} У:${rec.carbs}</span>
@@ -1804,26 +1866,47 @@
       document.getElementById('modalPeopleSpan').textContent = state.people;
 
       const portionCost = getRecipePortionCostRub(recipe);
+      const weights = getRecipeWeightsPerPortion(recipe);
       document.getElementById('modalRecipeStats').innerHTML = `
         <div><span class="block text-slate-400">Калории</span><strong class="text-slate-900">${recipe.kcal} ккал</strong></div>
         <div><span class="block text-slate-400">Б / Ж / У</span><strong class="text-slate-900">${recipe.protein}/${recipe.fat}/${recipe.carbs} г</strong></div>
-        <div><span class="block text-slate-400">Время</span><strong class="text-slate-900">${recipe.time} мин</strong></div>
-        <div><span class="block text-slate-400">Порция</span><strong class="text-emerald-700">${formatMoney(portionCost)}</strong></div>
+        <div><span class="block text-slate-400">Вес 1 порции</span><strong class="text-slate-900">сыр. ${weights.rawPerPortion}г → ~${weights.cookedPerPortion}г</strong></div>
+        <div><span class="block text-slate-400">Цена порции</span><strong class="text-emerald-700">${formatMoney(portionCost)}</strong></div>
       `;
 
       const ingList = document.getElementById('modalIngredientsList');
       ingList.innerHTML = '';
+      let totalRawAll = 0;
+      let totalCookedAll = 0;
       recipe.ingredients.forEach(ing => {
         const p = getProductById(ing.prodId);
         if (!p) return;
+        const rawW = Math.round(ing.amount * state.people);
+        const cookedW = getCookedAmount(p, rawW);
+        totalRawAll += rawW;
+        totalCookedAll += cookedW;
+        const note = getCookNote(p);
         const li = document.createElement('li');
-        li.className = 'flex justify-between items-center';
+        li.className = 'py-1.5 border-b border-slate-200/70 last:border-0 flex flex-wrap justify-between items-center gap-2';
         li.innerHTML = `
-          <span>• ${p.name}</span>
-          <span class="font-bold text-slate-900">${ing.amount * state.people} ${p.unit}</span>
+          <div>
+            <span class="font-semibold text-slate-900">• ${p.name}</span>
+            <span class="block text-[11px] text-slate-400">На 1 чел.: сыр. ${ing.amount} ${p.unit} → гот. ~${getCookedAmount(p, ing.amount)} ${p.unit} (${note})</span>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-900 font-semibold text-[11px]">Сырой: ${rawW} ${p.unit}</span>
+            <span class="inline-block px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-[11px] ml-1">Готовый: ~${cookedW} ${p.unit}</span>
+          </div>
         `;
         ingList.appendChild(li);
       });
+      const summaryLi = document.createElement('li');
+      summaryLi.className = 'pt-2 mt-1 border-t border-slate-300 flex justify-between items-center font-bold text-slate-900';
+      summaryLi.innerHTML = `
+        <span>Итого выход блюда (${state.people} перс.):</span>
+        <span>сырой ${totalRawAll} г → готовый ~${totalCookedAll} г</span>
+      `;
+      ingList.appendChild(summaryLi);
 
       const stepsList = document.getElementById('modalStepsList');
       stepsList.innerHTML = '';
@@ -1929,9 +2012,14 @@
               ${item.prod.name}
               <span class="ml-1.5 text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${storeBadge}</span>
             </div>
-            <div class="text-[11px] text-slate-500">
-              Нужно по рецептам: <strong>${item.neededAmount} ${item.prod.unit}</strong> · К покупке: <strong>${item.packsNeeded} уп. × ${item.prod.packSize} ${item.prod.unit}</strong>
-              ${item.leftoverAmount > 0 ? `(останется запас ${item.leftoverAmount} ${item.prod.unit})` : ''}
+            <div class="text-[11px] text-slate-500 space-y-0.5 mt-0.5">
+              <div>
+                Вес по меню: <strong class="text-amber-800">в сыром виде ${item.neededAmount} ${item.prod.unit}</strong> → <strong class="text-emerald-800">в готовом ~${item.cookedNeededAmount} ${item.prod.unit}</strong> <span class="text-slate-400">(${getCookNote(item.prod)})</span>
+              </div>
+              <div>
+                К покупке в магазине: <strong>${item.packsNeeded} уп. × ${item.prod.packSize} ${item.prod.unit}</strong>
+                ${item.leftoverAmount > 0 ? `(останется запас ${item.leftoverAmount} ${item.prod.unit} в сыром виде)` : ''}
+              </div>
             </div>
           `;
 
@@ -2039,6 +2127,12 @@
         tdPack.className = 'py-2.5 px-3 text-slate-600';
         tdPack.textContent = `${prod.packSize} ${prod.unit}`;
         tr.appendChild(tdPack);
+
+        const tdCook = document.createElement('td');
+        tdCook.className = 'py-2.5 px-3 text-slate-600';
+        const cooked100 = getCookedAmount(prod, 100);
+        tdCook.innerHTML = `<span class="font-semibold text-slate-800">100 ${prod.unit} → ~${cooked100} ${prod.unit}</span><span class="block text-[10px] text-slate-400">${getCookNote(prod)}</span>`;
+        tr.appendChild(tdCook);
 
         ['pyaterochka', 'magnit', 'lenta', 'auchan', 'perekrestok', 'vkusvill'].forEach(stKey => {
           const tdP = document.createElement('td');
@@ -2405,7 +2499,7 @@
           ''
         ];
         calc.items.filter(i => !i.inPantry).forEach(i => {
-          lines.push(`☐ ${i.prod.name}: ${i.packsNeeded} уп. (${i.totalPurchasedAmount} ${i.prod.unit}) — ${formatMoney(i.totalCostRub)}`);
+          lines.push(`☐ ${i.prod.name}: купить ${i.packsNeeded} уп. (${i.totalPurchasedAmount} ${i.prod.unit}) | по меню: сыр. ${i.neededAmount} ${i.prod.unit} → гот. ~${i.cookedNeededAmount} ${i.prod.unit} — ${formatMoney(i.totalCostRub)}`);
         });
         const text = lines.join('\n');
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2450,12 +2544,15 @@
           return;
         }
         const id = 'custom_' + Date.now();
+        const defCook = DEFAULT_COOK_FACTORS[cat] || { factor: 1.0, note: '1:1' };
         state.products.unshift({
           id,
           name,
           cat,
           unit: 'г',
           packSize: pack,
+          cookFactor: defCook.factor,
+          cookNote: defCook.note,
           allergens: [],
           prices: {
             pyaterochka: price,
