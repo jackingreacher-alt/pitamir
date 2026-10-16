@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>РационБюджет — Умный конструктор меню и покупок по бюджету</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    input[type="range"] {
+      accent-color: #059669;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-sm">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">РационБюджет</h1>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Умный планер</span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">Персональное меню по бюджету, магазинам, аллергиям и вкусам</p>
+        </div>
+      </div>
+
+      <!-- Live Budget Status Pill -->
+      <div class="flex items-center gap-2 sm:gap-4 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+        <div class="text-xs">
+          <span class="text-slate-500">Корзина:</span>
+          <span id="headerCartCost" class="font-bold text-slate-900 ml-1">0 ₽</span>
+          <span class="text-slate-400">/</span>
+          <span id="headerBudgetLimit" class="font-semibold text-emerald-700">5 000 ₽</span>
+        </div>
+        <div id="headerBudgetBadge" class="text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800">
+          В бюджете
+        </div>
+        <button id="btnQuickGenerate" type="button" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-sm flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span>Пересобрать меню</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex items-center gap-1 overflow-x-auto custom-scrollbar border-t border-slate-100 pt-1">
+      <button type="button" data-tab="tab-setup" class="nav-tab-btn px-3.5 py-2 text-xs sm:text-sm font-semibold border-b-2 border-emerald-600 text-emerald-700 whitespace-nowrap flex items-center gap-1.5 transition">
+        <span>⚙️ Параметры и вкусы</span>
+      </button>
+      <button type="button" data-tab="tab-menu" class="nav-tab-btn px-3.5 py-2 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5 transition">
+        <span>📅 Рацион по дням</span>
+        <span id="badgeMealsCount" class="text-[11px] px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700">21</span>
+      </button>
+      <button type="button" data-tab="tab-shopping" class="nav-tab-btn px-3.5 py-2 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5 transition">
+        <span>🛒 Список покупок и магазины</span>
+        <span id="badgeCartCount" class="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">0</span>
+      </button>
+      <button type="button" data-tab="tab-catalog" class="nav-tab-btn px-3.5 py-2 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5 transition">
+        <span>🏪 База продуктов и кладовая</span>
+      </button>
+      <button type="button" data-tab="tab-analytics" class="nav-tab-btn px-3.5 py-2 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 whitespace-nowrap flex items-center gap-1.5 transition">
+        <span>📊 Аналитика бюджета и КБЖУ</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5">
+
+    <!-- KPI Summary Strip -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+          <span>Итоговая закупка</span>
+          <span id="kpiStoreLabel" class="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Выгодная корзина</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiTotalCost" class="text-xl sm:text-2xl font-extrabold text-slate-900">0 ₽</span>
+          <span id="kpiBudgetDiff" class="text-xs font-semibold text-emerald-600">экономия 0 ₽</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2 rounded-full mt-2.5 overflow-hidden">
+          <div id="kpiBudgetBar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 50%"></div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+          <span>Цена в день / порцию</span>
+          <span id="kpiPeopleBadge" class="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">2 персоны</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiCostPerPersonDay" class="text-xl sm:text-2xl font-extrabold text-slate-900">0 ₽</span>
+          <span class="text-xs text-slate-500">/ чел. в день</span>
+        </div>
+        <p id="kpiCostPerPortion" class="text-xs text-slate-500 mt-2">Средняя стоимость порции: <strong class="text-slate-700">0 ₽</strong></p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+          <span>Среднее КБЖУ (на 1 чел./день)</span>
+          <span class="font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">Баланс</span>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <span id="kpiAvgKcal" class="text-xl sm:text-2xl font-extrabold text-slate-900">0</span>
+          <span class="text-xs text-slate-500">ккал</span>
+        </div>
+        <p id="kpiAvgMacros" class="text-xs text-slate-500 mt-2">Б: <strong class="text-slate-700">0г</strong> · Ж: <strong class="text-slate-700">0г</strong> · У: <strong class="text-slate-700">0г</strong></p>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+          <span>Фильтры и безопасность</span>
+          <span class="font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md">Активно</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiExcludedCount" class="text-xl sm:text-2xl font-extrabold text-slate-900">0</span>
+          <span class="text-xs text-slate-500">ограничений учтено</span>
+        </div>
+        <p id="kpiPantrySaved" class="text-xs text-slate-500 mt-2">Дома в кладовой: <strong class="text-slate-700">0 продуктов</strong></p>
+      </div>
+    </section>
+
+    <!-- TAB 1: SETUP & PREFERENCES -->
+    <section id="tab-setup" class="tab-panel space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Budget, People, Stores -->
+        <div class="lg:col-span-5 space-y-6">
+          <!-- Budget & Household Card -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="text-lg">💰</span>
+                <span>Бюджет, период и персоны</span>
+              </h2>
+              <select id="selectCurrency" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="RUB">₽ Рубли (RUB)</option>
+                <option value="USD">$ Доллары (USD)</option>
+                <option value="EUR">€ Евро (EUR)</option>
+                <option value="KRW">₩ Воны (KRW)</option>
+              </select>
+            </div>
+
+            <!-- Budget Slider + Number Input -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="inputBudgetNumber" class="text-xs font-semibold text-slate-600">Ваш бюджет на выбранный период:</label>
+                <div class="flex items-center gap-1.5">
+                  <input id="inputBudgetNumber" type="number" min="500" max="100000" step="100" value="5500" class="w-28 text-right font-bold text-sm bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <span id="currencySymbolLabel" class="text-sm font-bold text-slate-600">₽</span>
+                </div>
+              </div>
+              <input id="inputBudgetRange" type="range" min="1000" max="25000" step="250" value="5500" class="w-full cursor-pointer" />
+              <div class="flex justify-between text-[11px] text-slate-400">
+                <span>Эконом</span>
+                <span>Комфорт</span>
+                <span>Премиум</span>
+              </div>
+            </div>
+
+            <!-- Number of People & Days -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <label class="block text-xs font-semibold text-slate-600 mb-2">Сколько персон:</label>
+                <div class="flex items-center justify-between">
+                  <button type="button" id="btnPeopleMinus" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-bold text-slate-700 hover:bg-slate-100 transition">−</button>
+                  <div class="text-center">
+                    <span id="labelPeopleCount" class="text-lg font-extrabold text-slate-900">2</span>
+                    <span class="block text-[11px] text-slate-500">чел.</span>
+                  </div>
+                  <button type="button" id="btnPeoplePlus" class="w-8 h-8 rounded-lg bg-white border border-slate-300 font-bold text-slate-700 hover:bg-slate-100 transition">+</button>
+                </div>
+              </div>
+
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <label for="selectDaysCount" class="block text-xs font-semibold text-slate-600 mb-2">Длительность меню:</label>
+                <select id="selectDaysCount" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="7" selected>7 дней (неделя)</option>
+                  <option value="5">5 дней (будни)</option>
+                  <option value="3">3 дня</option>
+                  <option value="1">1 день (проба)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Meals per day -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">Приёмы пищи в день:</label>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="mealTypesContainer">
+                <label class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold text-emerald-900">
+                  <input type="checkbox" value="breakfast" checked class="meal-type-cb accent-emerald-600 rounded" />
+                  <span>Завтрак</span>
+                </label>
+                <label class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold text-emerald-900">
+                  <input type="checkbox" value="lunch" checked class="meal-type-cb accent-emerald-600 rounded" />
+                  <span>Обед</span>
+                </label>
+                <label class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold text-emerald-900">
+                  <input type="checkbox" value="dinner" checked class="meal-type-cb accent-emerald-600 rounded" />
+                  <span>Ужин</span>
+                </label>
+                <label class="flex items-center gap-2 bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 cursor-pointer text-xs font-semibold text-emerald-900">
+                  <input type="checkbox" value="snack" checked class="meal-type-cb accent-emerald-600 rounded" />
+                  <span>Перекус</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Store Selection Card -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span class="text-lg">🏪</span>
+                <span>Магазины для закупки</span>
+              </h2>
+              <span class="text-[11px] font-medium text-slate-500">Реальные фасовки</span>
+            </div>
+            <p class="text-xs text-slate-500">Выберите ваш любимый магазин или режим <strong>«Умная выгода»</strong> (приложение само найдёт, где каждый продукт дешевле, и сравнит чеки):</p>
+
+            <div id="storeSelectorGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Allergies, Stop-Foods, and "Eat More / Eat Less" -->
+        <div class="lg:col-span-7 space-y-6">
+
+          <!-- Allergies & Stop Ingredients Card -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span class="text-lg">🚫</span>
+                  <span>Аллергии и нелюбимые продукты</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Отметьте аллергены — блюда с ними будут полностью исключены из рациона</p>
+              </div>
+              <button type="button" id="btnClearAllergies" class="text-xs font-medium text-slate-500 hover:text-rose-600 transition">Сбросить</button>
+            </div>
+
+            <div id="allergyChipsContainer" class="flex flex-wrap gap-2">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Custom Stop-Products Input -->
+            <div class="pt-2 border-t border-slate-100">
+              <label for="inputCustomBan" class="block text-xs font-semibold text-slate-600 mb-1.5">Дополнительные стоп-продукты (через запятую или кнопку «Добавить»):</label>
+              <div class="flex gap-2">
+                <input id="inputCustomBan" type="text" placeholder="Например: свинина, грибы, лук, сельдерей, тунец..." class="flex-1 text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                <button type="button" id="btnAddCustomBan" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shrink-0">Исключить</button>
+              </div>
+              <div id="customBanTags" class="flex flex-wrap gap-1.5 mt-2"></div>
+            </div>
+          </div>
+
+          <!-- "What I eat more vs less" Preferences Card -->
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <span class="text-lg">⚖️</span>
+                  <span>Что вы едите больше, а что меньше</span>
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Настройте приоритеты по группам продуктов — алгоритм перестроит частоту блюд и порции</p>
+              </div>
+
+              <!-- Quick Presets -->
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" data-preset="balanced" class="preset-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition">Баланс</button>
+                <button type="button" data-preset="highprotein" class="preset-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Больше белка</button>
+                <button type="button" data-preset="budgetmax" class="preset-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Супер-эконом</button>
+                <button type="button" data-preset="veggie" class="preset-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Больше овощей</button>
+              </div>
+            </div>
+
+            <div id="categoryWeightsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-xs text-slate-600">
+                <input id="cbOptimizeReuse" type="checkbox" checked class="accent-emerald-600 rounded w-4 h-4" />
+                <label for="cbOptimizeReuse" class="cursor-pointer font-medium">Экономить бюджет за счёт использования упаковок без остатка</label>
+              </div>
+              <button type="button" id="btnGenerateAndViewMenu" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                <span>✨ Сформировать рацион и список покупок</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MEAL PLAN BY DAYS -->
+    <section id="tab-menu" class="tab-panel hidden space-y-5">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">Ваш персональный рацион</h2>
+          <p id="menuSubtitleInfo" class="text-xs text-slate-500">Рассчитано с учётом всех аллергий, бюджета и выбранных пропорций</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="btnFitStrictlyBudget" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold px-3 py-2 rounded-xl transition">
+            📉 Сделать ещё дешевле
+          </button>
+          <button type="button" id="btnRegenerateMenuTab" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition">
+            🔄 Новый вариант меню
+          </button>
+          <button type="button" id="btnGoToShopping" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition">
+            🛒 Перейти к списку покупок →
+          </button>
+        </div>
+      </div>
+
+      <!-- Day Selector Pills -->
+      <div id="dayFilterPills" class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Days Grid -->
+      <div id="daysMenuContainer" class="space-y-6">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 3: SHOPPING LIST & STORES -->
+    <section id="tab-shopping" class="tab-panel hidden space-y-6">
+      <!-- Store Comparison Cards -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Сравнение стоимости вашей корзины по магазинам</h2>
+            <p class="text-xs text-slate-500">Цены рассчитаны за целые упаковки с учётом того, что уже отмечено в вашей домашней кладовой</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" id="btnCopyShoppingList" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5">
+              <span>📋 Скопировать список</span>
+            </button>
+            <button type="button" id="btnResetBought" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition">
+              Снять отметки
+            </button>
+          </div>
+        </div>
+
+        <div id="storeComparisonRow" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Grouped Shopping List -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-8 space-y-4" id="shoppingDepartmentsContainer">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Right Sidebar: Summary & Leftovers Info -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-sm font-bold text-slate-900">Сводка по закупке</h3>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500">Выбранный режим закупки:</span>
+                <span id="summaryStoreName" class="font-bold text-slate-800">Умная выгода</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500">Всего позиций к покупке:</span>
+                <span id="summaryTotalItems" class="font-bold text-slate-800">0</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500">Отмечено как купленное:</span>
+                <span id="summaryBoughtItems" class="font-bold text-emerald-700">0</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-slate-100">
+                <span class="text-slate-500">Уже есть дома (кладовая):</span>
+                <span id="summaryPantryItems" class="font-bold text-blue-700">0</span>
+              </div>
+              <div class="flex justify-between py-1.5 text-sm">
+                <span class="font-bold text-slate-700">Итого к оплате в кассе:</span>
+                <span id="summaryFinalTotal" class="font-extrabold text-emerald-700">0 ₽</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-emerald-50/70 rounded-2xl p-5 border border-emerald-200 space-y-2">
+            <h3 class="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+              <span>💡</span>
+              <span>Остатки продуктов на следующую неделю</span>
+            </h3>
+            <p class="text-xs text-emerald-800 leading-relaxed">
+              Магазины продают продукты целыми пачками (например, крупы по 800 г или масло 500 мл). После приготовления всех блюд у вас останется запас продуктов ещё примерно на <strong id="summaryLeftoverValue">0 ₽</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: PRODUCT DATABASE & PANTRY -->
+    <section id="tab-catalog" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Каталог продуктов, цен по магазинам и домашняя кладовая</h2>
+            <p class="text-xs text-slate-500">Отметьте галочкой <strong>«Есть дома»</strong> те продукты, которые не нужно покупать — они сразу вычтутся из суммы чека. Вы также можете добавить свой продукт.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input id="inputSearchCatalog" type="text" placeholder="Поиск продукта..." class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <select id="selectFilterCategory" class="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="all">Все категории</option>
+              <option value="meat">Мясо и птица</option>
+              <option value="fish">Рыба и морепродукты</option>
+              <option value="dairy">Молочные продукты и яйца</option>
+              <option value="grains">Крупы, паста, хлеб</option>
+              <option value="veg">Овощи и зелень</option>
+              <option value="fruit">Фрукты и ягоды</option>
+              <option value="legumes">Бобовые и орехи</option>
+              <option value="pantry">Бакалея, масла и специи</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Add Custom Product Form -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <h3 class="text-xs font-bold text-slate-700 mb-2.5">➕ Добавить свой продукт и цену в базу</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-6 gap-2.5">
+            <input id="newProdName" type="text" placeholder="Название (напр. Индейка филе)" class="sm:col-span-2 text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2" />
+            <select id="newProdCat" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2">
+              <option value="meat">Мясо и птица</option>
+              <option value="fish">Рыба и морепродукты</option>
+              <option value="dairy">Молочка и яйца</option>
+              <option value="grains">Крупы и хлеб</option>
+              <option value="veg">Овощи и зелень</option>
+              <option value="fruit">Фрукты</option>
+              <option value="legumes">Бобовые и орехи</option>
+              <option value="pantry">Бакалея</option>
+            </select>
+            <input id="newProdPack" type="number" min="50" max="5000" step="50" placeholder="Вес пачки, г (500)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2" />
+            <input id="newProdPrice" type="number" min="10" max="50000" step="10" placeholder="Цена пачки (350)" class="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2" />
+            <button type="button" id="btnAddNewProduct" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg px-3 py-2 transition">Добавить</button>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-200 text-slate-500 bg-slate-50/80">
+                <th class="py-2.5 px-3 font-semibold">Есть дома</th>
+                <th class="py-2.5 px-3 font-semibold">Продукт</th>
+                <th class="py-2.5 px-3 font-semibold">Категория</th>
+                <th class="py-2.5 px-3 font-semibold">Фасовка</th>
+                <th class="py-2.5 px-3 font-semibold">Пятёрочка</th>
+                <th class="py-2.5 px-3 font-semibold">Магнит</th>
+                <th class="py-2.5 px-3 font-semibold">Лента</th>
+                <th class="py-2.5 px-3 font-semibold">Ашан</th>
+                <th class="py-2.5 px-3 font-semibold">Перекрёсток</th>
+                <th class="py-2.5 px-3 font-semibold">ВкусВилл</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTableBody" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: ANALYTICS & CHARTS -->
+    <section id="tab-analytics" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Распределение бюджета по отделам продуктов</h3>
+          <p class="text-xs text-slate-500 mb-4">Показывает, на какие категории уходит основная часть корзины</p>
+          <div class="relative h-72">
+            <canvas id="chartCategorySpend"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Сравнение стоимости полной корзины в разных сетях</h3>
+          <p class="text-xs text-slate-500 mb-4">Разница в цене на один и тот же набор продуктов вашей недели</p>
+          <div class="relative h-72">
+            <canvas id="chartStoreComparison"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Recipe Modal -->
+  <div id="recipeModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <span id="modalMealTypeBadge" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Завтрак</span>
+          <h3 id="modalRecipeTitle" class="text-lg font-extrabold text-slate-900 mt-1">Название блюда</h3>
+        </div>
+        <button type="button" id="btnCloseModal" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      </div>
+
+      <div id="modalRecipeStats" class="grid grid-cols-4 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-xs">
+        <!-- Populated by JS -->
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Ингредиенты на <span id="modalPeopleSpan">2</span> перс.:</h4>
+        <ul id="modalIngredientsList" class="space-y-1.5 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-xl border border-slate-200"></ul>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Пошаговое приготовление:</h4>
+        <ol id="modalStepsList" class="space-y-2 text-xs text-slate-700 list-decimal list-inside leading-relaxed"></ol>
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2">
+        <button type="button" id="btnModalCloseBottom" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">Понятно</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+    <span id="toastText">Успешно обновлено</span>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CURRENCY & STORE CONFIGURATION
+    // ==========================================
+    const CURRENCIES = {
+      RUB: { symbol: '₽', rate: 1, step: 250, min: 1000, max: 30000 },
+      USD: { symbol: '$', rate: 0.011, step: 5, min: 15, max: 350 },
+      EUR: { symbol: '€', rate: 0.010, step: 5, min: 15, max: 350 },
+      KRW: { symbol: '₩', rate: 15.2, step: 5000, min: 15000, max: 450000 }
+    };
+
+    const STORES = [
+      { id: 'smart', name: 'Умная выгода', badge: 'Лучшие цены', color: 'emerald', desc: 'Ищет минимальную цену каждого продукта' },
+      { id: 'pyaterochka', name: 'Пятёрочка', badge: 'У дома', color: 'red', desc: 'Доступные базовые продукты и марки' },
+      { id: 'magnit', name: 'Магнит', badge: 'Эконом', color: 'rose', desc: 'Выгодные крупы, овощи и молочка' },
+      { id: 'lenta', name: 'Лента', badge: 'Гипермаркет', color: 'blue', desc: 'Выгодно на большую семью' },
+      { id: 'auchan', name: 'Ашан', badge: 'Дискаунтер', color: 'amber', desc: 'Дешёвая бакалея и базовые позиции' },
+      { id: 'perekrestok', name: 'Перекрёсток', badge: 'Супермаркет', color: 'sky', desc: 'Большой выбор рыбы, зелени и мяса' },
+      { id: 'vkusvill', name: 'ВкусВилл', badge: 'Фермерское', color: 'green', desc: 'Натуральные продукты и ЗОЖ-позиции' }
+    ];
+
+    const ALLERGENS = [
+      { id: 'lactose', name: '🥛 Лактоза и молоко' },
+      { id: 'gluten', name: '🌾 Глютен и пшеница' },
+      { id: 'eggs', name: '🥚 Куриные яйца' },
+      { id: 'nuts', name: '🥜 Орехи и арахис' },
+      { id: 'fish', name: '🐟 Рыба' },
+      { id: 'seafood', name: '🦐 Морепродукты' },
+      { id: 'soy', name: '🫘 Соя' },
+      { id: 'citrus', name: '🍋 Цитрусовые' },
+      { id: 'honey', name: '🍯 Мёд' }
+    ];
+
+    const FOOD_CATEGORIES = [
+      { id: 'meat', name: '🥩 Мясо и птица', desc: 'Курица, индейка, говядина' },
+      { id: 'fish', name: '🐟 Рыба и морепродукты', desc: 'Минтай, горбуша, треска' },
+      { id: 'veg', name: '🥦 Овощи и зелень', desc: 'Салаты, рагу, запеканки' },
+      { id: 'grains', name: '🥣 Крупы, паста и гарниры', desc: 'Гречка, рис, овсянка, макароны' },
+      { id: 'dairy', name: '🧀 Творог, сыр и молочка', desc: 'Сырники, запеканки, йогурт' },
+      { id: 'legumes', name: '🫘 Бобовые и растительный белок', desc: 'Чечевица, нут, фасоль, тофу' },
+      { id: 'fruit', name: '🍎 Фрукты и перекусы', desc: 'Яблоки, бананы, ягоды' }
+    ];
+
+    // ==========================================
+    // 2. PRODUCT DATABASE WITH STORE PRICES (in RUB)
+    // ==========================================
+    const INITIAL_PRODUCTS = [
+      // Meat & Poultry
+      { id: 'chicken_breast', name: 'Куриное филе', cat: 'meat', unit: 'г', packSize: 600, allergens: [], prices: { pyaterochka: 239, magnit: 245, lenta: 229, auchan: 225, perekrestok: 259, vkusvill: 295 } },
+      { id: 'turkey_fillet', name: 'Филе индейки', cat: 'meat', unit: 'г', packSize: 500, allergens: [], prices: { pyaterochka: 269, magnit: 275, lenta: 255, auchan: 249, perekrestok: 289, vkusvill: 320 } },
+      { id: 'beef_mince', name: 'Фарш говяжий постный', cat: 'meat', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 249, magnit: 259, lenta: 239, auchan: 235, perekrestok: 279, vkusvill: 315 } },
+      // Fish & Seafood
+      { id: 'white_fish', name: 'Филе минтая / трески', cat: 'fish', unit: 'г', packSize: 600, allergens: ['fish'], prices: { pyaterochka: 249, magnit: 239, lenta: 229, auchan: 219, perekrestok: 269, vkusvill: 310 } },
+      { id: 'pink_salmon', name: 'Горбуша / красная рыба', cat: 'fish', unit: 'г', packSize: 500, allergens: ['fish'], prices: { pyaterochka: 329, magnit: 339, lenta: 315, auchan: 309, perekrestok: 359, vkusvill: 395 } },
+      { id: 'shrimp', name: 'Креветки очищенные', cat: 'fish', unit: 'г', packSize: 400, allergens: ['seafood'], prices: { pyaterochka: 399, magnit: 410, lenta: 379, auchan: 369, perekrestok: 429, vkusvill: 490 } },
+      // Dairy & Eggs
+      { id: 'eggs', name: 'Яйца куриные С1 (10 шт)', cat: 'dairy', unit: 'г', packSize: 550, allergens: ['eggs'], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 95, perekrestok: 119, vkusvill: 135 } },
+      { id: 'cottage_cheese', name: 'Творог 5%', cat: 'dairy', unit: 'г', packSize: 400, allergens: ['lactose'], prices: { pyaterochka: 159, magnit: 155, lenta: 149, auchan: 145, perekrestok: 175, vkusvill: 195 } },
+      { id: 'milk', name: 'Молоко 2.5%', cat: 'dairy', unit: 'мл', packSize: 950, allergens: ['lactose'], prices: { pyaterochka: 79, magnit: 76, lenta: 74, auchan: 72, perekrestok: 89, vkusvill: 98 } },
+      { id: 'plant_milk', name: 'Овсяное / кокосовое молоко', cat: 'pantry', unit: 'мл', packSize: 1000, allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 145 } },
+      { id: 'cheese', name: 'Сыр полутвёрдый', cat: 'dairy', unit: 'г', packSize: 250, allergens: ['lactose'], prices: { pyaterochka: 189, magnit: 195, lenta: 179, auchan: 175, perekrestok: 215, vkusvill: 245 } },
+      { id: 'greek_yogurt', name: 'Йогурт натуральный / сметана', cat: 'dairy', unit: 'г', packSize: 300, allergens: ['lactose'], prices: { pyaterochka: 85, magnit: 89, lenta: 79, auchan: 76, perekrestok: 95, vkusvill: 110 } },
+      // Grains & Pasta
+      { id: 'oats', name: 'Овсяные хлопья долгой варки', cat: 'grains', unit: 'г', packSize: 500, allergens: ['gluten'], prices: { pyaterochka: 65, magnit: 62, lenta: 59, auchan: 55, perekrestok: 75, vkusvill: 88 } },
+      { id: 'buckwheat', name: 'Гречневая крупа ядрица', cat: 'grains', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 105 } },
+      { id: 'rice', name: 'Рис длиннозёрный / бурый', cat: 'grains', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 109, magnit: 105, lenta: 99, auchan: 94, perekrestok: 119, vkusvill: 135 } },
+      { id: 'pasta', name: 'Паста из твёрдых сортов', cat: 'grains', unit: 'г', packSize: 450, allergens: ['gluten'], prices: { pyaterochka: 75, magnit: 72, lenta: 68, auchan: 64, perekrestok: 89, vkusvill: 105 } },
+      { id: 'whole_bread', name: 'Хлеб цельнозерновой / тостовый', cat: 'grains', unit: 'г', packSize: 350, allergens: ['gluten'], prices: { pyaterochka: 59, magnit: 55, lenta: 54, auchan: 49, perekrestok: 69, vkusvill: 85 } },
+      // Legumes & Nuts
+      { id: 'lentils', name: 'Чечевица красная / зелёная', cat: 'legumes', unit: 'г', packSize: 450, allergens: [], prices: { pyaterochka: 109, magnit: 115, lenta: 99, auchan: 95, perekrestok: 125, vkusvill: 140 } },
+      { id: 'chickpeas', name: 'Нут / фасоль консерв.', cat: 'legumes', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 89, magnit: 85, lenta: 79, auchan: 75, perekrestok: 99, vkusvill: 115 } },
+      { id: 'tofu', name: 'Тофу классический', cat: 'legumes', unit: 'г', packSize: 300, allergens: ['soy'], prices: { pyaterochka: 139, magnit: 145, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 165 } },
+      { id: 'nuts_mix', name: 'Миндаль / грецкий орех', cat: 'legumes', unit: 'г', packSize: 150, allergens: ['nuts'], prices: { pyaterochka: 169, magnit: 175, lenta: 159, auchan: 149, perekrestok: 189, vkusvill: 210 } },
+      // Vegetables
+      { id: 'potatoes', name: 'Картофель свежий', cat: 'veg', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 45, magnit: 42, lenta: 39, auchan: 38, perekrestok: 55, vkusvill: 69 } },
+      { id: 'carrots_onion', name: 'Морковь и репчатый лук (набор)', cat: 'veg', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 55, magnit: 52, lenta: 49, auchan: 45, perekrestok: 65, vkusvill: 79 } },
+      { id: 'tomatoes_cucumbers', name: 'Томаты и огурцы свежие', cat: 'veg', unit: 'г', packSize: 800, allergens: [], prices: { pyaterochka: 169, magnit: 165, lenta: 155, auchan: 149, perekrestok: 189, vkusvill: 215 } },
+      { id: 'broccoli_veggies', name: 'Брокколи и овощная смесь', cat: 'veg', unit: 'г', packSize: 400, allergens: [], prices: { pyaterochka: 119, magnit: 125, lenta: 109, auchan: 99, perekrestok: 135, vkusvill: 155 } },
+      { id: 'cabbage_greens', name: 'Капуста белокочанная и зелень', cat: 'veg', unit: 'г', packSize: 900, allergens: [], prices: { pyaterochka: 69, magnit: 65, lenta: 59, auchan: 55, perekrestok: 79, vkusvill: 95 } },
+      // Fruits
+      { id: 'apples', name: 'Яблоки сезонные', cat: 'fruit', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 119, magnit: 115, lenta: 109, auchan: 99, perekrestok: 129, vkusvill: 149 } },
+      { id: 'bananas', name: 'Бананы спелые', cat: 'fruit', unit: 'г', packSize: 1000, allergens: [], prices: { pyaterochka: 139, magnit: 135, lenta: 129, auchan: 125, perekrestok: 149, vkusvill: 160 } },
+      { id: 'citrus_fruit', name: 'Апельсины / мандарины', cat: 'fruit', unit: 'г', packSize: 800, allergens: ['citrus'], prices: { pyaterochka: 149, magnit: 145, lenta: 139, auchan: 135, perekrestok: 165, vkusvill: 185 } },
+      // Pantry
+      { id: 'oil_spices', name: 'Масло подсолнечное / оливковое', cat: 'pantry', unit: 'мл', packSize: 500, allergens: [], prices: { pyaterochka: 99, magnit: 95, lenta: 89, auchan: 85, perekrestok: 115, vkusvill: 135 } },
+      { id: 'tomato_paste', name: 'Томатная паста / протёртые томаты', cat: 'pantry', unit: 'г', packSize: 350, allergens: [], prices: { pyaterochka: 79, magnit: 75, lenta: 69, auchan: 65, perekrestok: 89, vkusvill: 99 } },
+      { id: 'honey_jar', name: 'Мёд цветочный натуральный', cat: 'pantry', unit: 'г', packSize: 250, allergens: ['honey'], prices: { pyaterochka: 149, magnit: 155, lenta: 139, auchan: 135, perekrestok: 169, vkusvill: 195 } }
+    ];
+
+    // ==========================================
+    // 3. RECIPES DATABASE (Per 1 Person Serving)
+    // ==========================================
+    const RECIPES = [
+      // BREAKFASTS
+      {
+        id: 'b_oatmeal_milk',
+        type: 'breakfast',
+        title: 'Сливочная овсяная каша с бананом и яблоком',
+        time: 12,
+        kcal: 380, protein: 12, fat: 8, carbs: 64,
+        mainCat: 'grains',
+        tags: ['dairy', 'fruit', 'grains'],
+        ingredients: [
+          { prodId: 'oats', amount: 70 },
+          { prodId: 'milk', amount: 180 },
+          { prodId: 'bananas', amount: 90 },
+          { prodId: 'apples', amount: 70 }
+        ],
+        steps: [
+          'Всыпьте овсяные хлопья в сотейник, залейте молоком (или водой пополам с молоком) и доведите до кипения.',
+          'Томите на слабом огне 7–8 минут, помешивая.',
+          'Нарежьте банан кружочками и яблоко кубиками, выложите сверху на готовую кашу.'
+        ]
+      },
+      {
+        id: 'b_buckwheat_porridge_df',
+        type: 'breakfast',
+        title: 'Гречневая боул-каша на овсяном молоке с яблоком (без лактозы и глютена)',
+        time: 15,
+        kcal: 350, protein: 10, fat: 6, carbs: 65,
+        mainCat: 'grains',
+        tags: ['grains', 'fruit'],
+        ingredients: [
+          { prodId: 'buckwheat', amount: 75 },
+          { prodId: 'plant_milk', amount: 180 },
+          { prodId: 'apples', amount: 100 }
+        ],
+        steps: [
+          'Отварите гречку до мягкости в подсоленной воде.',
+          'Добавьте тёплое растительное молоко и ломтики свежего яблока, прогрейте 2 минуты.'
+        ]
+      },
+      {
+        id: 'b_omelette_veg',
+        type: 'breakfast',
+        title: 'Пышный омлет с томатами, зеленью и сыром',
+        time: 10,
+        kcal: 365, protein: 24, fat: 26, carbs: 8,
+        mainCat: 'dairy',
+        tags: ['dairy', 'veg'],
+        ingredients: [
+          { prodId: 'eggs', amount: 110 },
+          { prodId: 'milk', amount: 50 },
+          { prodId: 'tomatoes_cucumbers', amount: 90 },
+          { prodId: 'cheese', amount: 30 }
+        ],
+        steps: [
+          'Взбейте 2 яйца с молоком и щепоткой соли.',
+          'Обжарьте на сковороде кубики томатов 2 минуты, залейте яичной смесью.',
+          'Посыпьте тёртым сыром и готовьте под крышкой 5 минут на слабом огне.'
+        ]
+      },
+      {
+        id: 'b_scrambled_eggs_df',
+        type: 'breakfast',
+        title: 'Яичница-скрэмбл со свежими овощами и зеленью (без молока и глютена)',
+        time: 10,
+        kcal: 310, protein: 18, fat: 22, carbs: 9,
+        mainCat: 'veg',
+        tags: ['veg'],
+        ingredients: [
+          { prodId: 'eggs', amount: 110 },
+          { prodId: 'tomatoes_cucumbers', amount: 120 },
+          { prodId: 'oil_spices', amount: 8 }
+        ],
+        steps: [
+          'Разогрейте каплю масла на сковороде и вылейте разболтанные яйца.',
+          'Постоянно помешивайте лопаткой 3 минуты до нежной кремовой текстуры и подавайте с нарезанными томатами и огурцами.'
+        ]
+      },
+      {
+        id: 'b_cottage_pancakes',
+        type: 'breakfast',
+        title: 'Нежные творожные сырники со сметаной и бананом',
+        time: 18,
+        kcal: 410, protein: 27, fat: 15, carbs: 40,
+        mainCat: 'dairy',
+        tags: ['dairy', 'fruit'],
+        ingredients: [
+          { prodId: 'cottage_cheese', amount: 140 },
+          { prodId: 'eggs', amount: 45 },
+          { prodId: 'greek_yogurt', amount: 45 },
+          { prodId: 'bananas', amount: 70 }
+        ],
+        steps: [
+          'Разомните творог с яйцом и сформируйте аккуратные шайбочки.',
+          'Обжарьте на антипригарной сковороде по 4 минуты с каждой стороны под крышкой.',
+          'Подавайте с натуральным йогуртом/сметаной и ломтиками банана.'
+        ]
+      },
+      {
+        id: 'b_tofu_scramble',
+        type: 'breakfast',
+        title: 'Веган-скрэмбл из тофу с овощами и рисовой основой',
+        time: 12,
+        kcal: 340, protein: 19, fat: 14, carbs: 35,
+        mainCat: 'legumes',
+        tags: ['legumes', 'veg'],
+        ingredients: [
+          { prodId: 'tofu', amount: 120 },
+          { prodId: 'tomatoes_cucumbers', amount: 100 },
+          { prodId: 'rice', amount: 45 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Раскрошите тофу руками на разогретую сковороду со специями.',
+          'Добавьте нарезанные томаты и тушите 5–6 минут, подавайте с отварным рисом.'
+        ]
+      },
+      {
+        id: 'b_rice_pudding_fruit',
+        type: 'breakfast',
+        title: 'Утренняя рисовая каша с яблоком и корицей (гипоаллергенная)',
+        time: 18,
+        kcal: 335, protein: 7, fat: 4, carbs: 67,
+        mainCat: 'grains',
+        tags: ['grains', 'fruit'],
+        ingredients: [
+          { prodId: 'rice', amount: 75 },
+          { prodId: 'apples', amount: 110 },
+          { prodId: 'bananas', amount: 70 }
+        ],
+        steps: [
+          'Отварите рис в воде до мягкости около 15 минут.',
+          'Добавьте мелко нарезанное яблоко и банан, потомите под крышкой ещё 2 минуты.'
+        ]
+      },
+
+      // LUNCHES
+      {
+        id: 'l_chicken_buckwheat',
+        type: 'lunch',
+        title: 'Куриное филе в томатном соусе с рассыпчатой гречкой и салатом',
+        time: 25,
+        kcal: 490, protein: 38, fat: 11, carbs: 58,
+        mainCat: 'meat',
+        tags: ['meat', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'chicken_breast', amount: 150 },
+          { prodId: 'buckwheat', amount: 80 },
+          { prodId: 'carrots_onion', amount: 70 },
+          { prodId: 'tomato_paste', amount: 30 },
+          { prodId: 'cabbage_greens', amount: 90 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Отварите гречку в соотношении 1:2 с водой (15 минут).',
+          'Обжарьте кусочки куриного филе с луком и морковью, добавьте томатную пасту и немного воды, тушите 10 минут.',
+          'Нашинкуйте свежую капусту с зеленью на гарнир.'
+        ]
+      },
+      {
+        id: 'l_turkey_rice_bowl',
+        type: 'lunch',
+        title: 'Боул с индейкой, рисом, брокколи и морковью',
+        time: 25,
+        kcal: 480, protein: 36, fat: 10, carbs: 60,
+        mainCat: 'meat',
+        tags: ['meat', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'turkey_fillet', amount: 140 },
+          { prodId: 'rice', amount: 80 },
+          { prodId: 'broccoli_veggies', amount: 110 },
+          { prodId: 'carrots_onion', amount: 60 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Отварите рис до готовности.',
+          'Обжарьте кусочки филе индейки с морковью и соцветиями брокколи под крышкой 12 минут.',
+          'Выложите в глубокую тарелку рис, индейку и овощи.'
+        ]
+      },
+      {
+        id: 'l_beef_bolognese_pasta',
+        type: 'lunch',
+        title: 'Паста болоньезе с говяжьим фаршем и томатами',
+        time: 25,
+        kcal: 540, protein: 33, fat: 16, carbs: 64,
+        mainCat: 'meat',
+        tags: ['meat', 'grains'],
+        ingredients: [
+          { prodId: 'beef_mince', amount: 130 },
+          { prodId: 'pasta', amount: 85 },
+          { prodId: 'carrots_onion', amount: 70 },
+          { prodId: 'tomato_paste', amount: 45 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Обжарьте лук и морковь, добавьте говяжий фарш и готовьте 10 минут, разбивая комочки.',
+          'Добавьте томатную пасту и 80 мл воды, потомите 7 минут.',
+          'Отварите пасту аль денте и соедините с мясным соусом.'
+        ]
+      },
+      {
+        id: 'l_lentil_soup_stew',
+        type: 'lunch',
+        title: 'Густая пряная чечевичная похлёбка с картофелем и овощами',
+        time: 25,
+        kcal: 430, protein: 22, fat: 9, carbs: 65,
+        mainCat: 'legumes',
+        tags: ['legumes', 'veg'],
+        ingredients: [
+          { prodId: 'lentils', amount: 85 },
+          { prodId: 'potatoes', amount: 130 },
+          { prodId: 'carrots_onion', amount: 90 },
+          { prodId: 'tomato_paste', amount: 30 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Спассеруйте лук и морковь с томатной пастой в кастрюле.',
+          'Добавьте кубики картофеля, промытую чечевицу и залейте горячей водой.',
+          'Варите 18–20 минут до мягкости чечевицы и картофеля.'
+        ]
+      },
+      {
+        id: 'l_fish_potato_bake',
+        type: 'lunch',
+        title: 'Запечённое филе белой рыбы с молодым картофелем и капустным салатом',
+        time: 30,
+        kcal: 445, protein: 32, fat: 11, carbs: 54,
+        mainCat: 'fish',
+        tags: ['fish', 'veg'],
+        ingredients: [
+          { prodId: 'white_fish', amount: 160 },
+          { prodId: 'potatoes', amount: 200 },
+          { prodId: 'cabbage_greens', amount: 110 },
+          { prodId: 'carrots_onion', amount: 60 },
+          { prodId: 'oil_spices', amount: 12 }
+        ],
+        steps: [
+          'Нарежьте картофель дольками и выложите с филе минтая/трески и луком в форму или на сковороду под крышку на 22 минуты.',
+          'Подавайте с хрустящим салатом из капусты и зелени.'
+        ]
+      },
+      {
+        id: 'l_chickpea_veg_curry',
+        type: 'lunch',
+        title: 'Сытное рагу из нута с рисом, томатами и брокколи',
+        time: 20,
+        kcal: 460, protein: 18, fat: 11, carbs: 72,
+        mainCat: 'legumes',
+        tags: ['legumes', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'chickpeas', amount: 120 },
+          { prodId: 'rice', amount: 75 },
+          { prodId: 'broccoli_veggies', amount: 100 },
+          { prodId: 'tomato_paste', amount: 35 },
+          { prodId: 'carrots_onion', amount: 70 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Отварите рис на гарнир.',
+          'Потушите нут с луком, морковью, брокколи и томатным соусом 12 минут и подавайте с рисом.'
+        ]
+      },
+
+      // DINNERS
+      {
+        id: 'd_chicken_veg_skillet',
+        type: 'dinner',
+        title: 'Лёгкое соте из куриного филе с брокколи и свежими овощами',
+        time: 20,
+        kcal: 375, protein: 37, fat: 12, carbs: 28,
+        mainCat: 'meat',
+        tags: ['meat', 'veg'],
+        ingredients: [
+          { prodId: 'chicken_breast', amount: 150 },
+          { prodId: 'broccoli_veggies', amount: 140 },
+          { prodId: 'tomatoes_cucumbers', amount: 110 },
+          { prodId: 'potatoes', amount: 110 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Обжарьте полоски куриного филе с отварным или запечённым картофелем и брокколи 14 минут.',
+          'Дополните ужин нарезкой свежих томатов и огурцов.'
+        ]
+      },
+      {
+        id: 'd_salmon_rice_salad',
+        type: 'dinner',
+        title: 'Красная рыба на пару / гриле с рисом и свежими огурцами',
+        time: 20,
+        kcal: 450, protein: 34, fat: 15, carbs: 44,
+        mainCat: 'fish',
+        tags: ['fish', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'pink_salmon', amount: 140 },
+          { prodId: 'rice', amount: 65 },
+          { prodId: 'tomatoes_cucumbers', amount: 120 },
+          { prodId: 'oil_spices', amount: 8 }
+        ],
+        steps: [
+          'Приготовьте стейк или филе горбуши на антипригарной сковороде под крышкой (по 5 минут с каждой стороны).',
+          'Подавайте с порцией риса и свежим салатом.'
+        ]
+      },
+      {
+        id: 'd_shrimp_pasta',
+        type: 'dinner',
+        title: 'Средиземноморская паста с креветками, томатами и зеленью',
+        time: 18,
+        kcal: 430, protein: 30, fat: 10, carbs: 54,
+        mainCat: 'fish',
+        tags: ['fish', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'shrimp', amount: 120 },
+          { prodId: 'pasta', amount: 75 },
+          { prodId: 'tomatoes_cucumbers', amount: 100 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Отварите пасту до состояния аль денте.',
+          'Обжарьте креветки с томатами 4 минуты, смешайте с пастой и свежей зеленью.'
+        ]
+      },
+      {
+        id: 'd_turkey_cabbage_braise',
+        type: 'dinner',
+        title: 'Домашняя тушёная капуста с филе индейки и морковью',
+        time: 25,
+        kcal: 360, protein: 32, fat: 11, carbs: 32,
+        mainCat: 'veg',
+        tags: ['meat', 'veg'],
+        ingredients: [
+          { prodId: 'turkey_fillet', amount: 135 },
+          { prodId: 'cabbage_greens', amount: 220 },
+          { prodId: 'carrots_onion', amount: 80 },
+          { prodId: 'tomato_paste', amount: 25 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Обжарьте кусочки индейки с морковью и луком 7 минут.',
+          'Добавьте нашинкованную капусту, томатную пасту и тушите под крышкой 15 минут до мягкости.'
+        ]
+      },
+      {
+        id: 'd_cottage_cheese_bowl',
+        type: 'dinner',
+        title: 'Белковый творожный ужин с зеленью, свежими огурцами и тостом',
+        time: 8,
+        kcal: 350, protein: 28, fat: 12, carbs: 32,
+        mainCat: 'dairy',
+        tags: ['dairy', 'veg', 'grains'],
+        ingredients: [
+          { prodId: 'cottage_cheese', amount: 140 },
+          { prodId: 'greek_yogurt', amount: 50 },
+          { prodId: 'tomatoes_cucumbers', amount: 120 },
+          { prodId: 'whole_bread', amount: 60 }
+        ],
+        steps: [
+          'Смешайте творог с йогуртом, мелко нарезанными огурцами и укропом.',
+          'Подавайте с подсушенным цельнозерновым хлебом.'
+        ]
+      },
+      {
+        id: 'd_buckwheat_veg_stew',
+        type: 'dinner',
+        title: 'Гречка по-купечески с овощами, фасолью/нутом и томатами (постная)',
+        time: 20,
+        kcal: 390, protein: 16, fat: 9, carbs: 64,
+        mainCat: 'veg',
+        tags: ['grains', 'veg', 'legumes'],
+        ingredients: [
+          { prodId: 'buckwheat', amount: 75 },
+          { prodId: 'chickpeas', amount: 90 },
+          { prodId: 'carrots_onion', amount: 85 },
+          { prodId: 'broccoli_veggies', amount: 100 },
+          { prodId: 'oil_spices', amount: 10 }
+        ],
+        steps: [
+          'Обжарьте овощи на сковороде, всыпьте гречку и нут, залейте горячей водой.',
+          'Томите под крышкой 15 минут до полного впитывания бульона.'
+        ]
+      },
+      {
+        id: 'd_beef_potato_roast',
+        type: 'dinner',
+        title: 'Жаркое по-домашнему с говяжьим фаршем, картофелем и овощами',
+        time: 25,
+        kcal: 440, protein: 29, fat: 16, carbs: 45,
+        mainCat: 'meat',
+        tags: ['meat', 'veg'],
+        ingredients: [
+          { prodId: 'beef_mince', amount: 125 },
+          { prodId: 'potatoes', amount: 190 },
+          { prodId: 'carrots_onion', amount: 80 },
+          { prodId: 'cabbage_greens', amount: 90 },
+          { prodId: 'oil_spices', amount: 8 }
+        ],
+        steps: [
+          'Обжарьте говяжий фарш с луком и морковью, добавьте кубики картофеля и немного воды.',
+          'Тушите под крышкой 18 минут и подавайте со свежей зеленью.'
+        ]
+      },
+
+      // SNACKS
+      {
+        id: 's_apple_banana',
+        type: 'snack',
+        title: 'Фруктовая тарелка: яблоко и спелый банан',
+        time: 3,
+        kcal: 165, protein: 2, fat: 1, carbs: 38,
+        mainCat: 'fruit',
+        tags: ['fruit'],
+        ingredients: [
+          { prodId: 'apples', amount: 130 },
+          { prodId: 'bananas', amount: 100 }
+        ],
+        steps: [
+          'Нарежьте свежее яблоко и банан дольками для быстрого перекуса.'
+        ]
+      },
+      {
+        id: 's_yogurt_fruit',
+        type: 'snack',
+        title: 'Натуральный йогурт с бананом и яблоком',
+        time: 4,
+        kcal: 195, protein: 9, fat: 5, carbs: 28,
+        mainCat: 'dairy',
+        tags: ['dairy', 'fruit'],
+        ingredients: [
+          { prodId: 'greek_yogurt', amount: 120 },
+          { prodId: 'bananas', amount: 80 },
+          { prodId: 'apples', amount: 60 }
+        ],
+        steps: [
+          'Выложите натуральный йогурт в креманку и добавьте кубики фруктов.'
+        ]
+      },
+      {
+        id: 's_nuts_apple',
+        type: 'snack',
+        title: 'Ореховый перекус с яблоком',
+        time: 3,
+        kcal: 220, protein: 6, fat: 14, carbs: 20,
+        mainCat: 'legumes',
+        tags: ['legumes', 'fruit'],
+        ingredients: [
+          { prodId: 'nuts_mix', amount: 25 },
+          { prodId: 'apples', amount: 130 }
+        ],
+        steps: [
+          'Порция миндаля или грецких орехов со свежим хрустящим яблоком.'
+        ]
+      },
+      {
+        id: 's_cheese_sandwich',
+        type: 'snack',
+        title: 'Цельнозерновой тост с сыром и свежим огурцом',
+        time: 5,
+        kcal: 210, protein: 11, fat: 9, carbs: 21,
+        mainCat: 'dairy',
+        tags: ['dairy', 'grains', 'veg'],
+        ingredients: [
+          { prodId: 'whole_bread', amount: 50 },
+          { prodId: 'cheese', amount: 35 },
+          { prodId: 'tomatoes_cucumbers', amount: 60 }
+        ],
+        steps: [
+          'Подсушите ломтик цельнозернового хлеба, положите сыр и кружочки свежего огурца.'
+        ]
+      },
+      {
+        id: 's_citrus_mix',
+        type: 'snack',
+        title: 'Витаминный перекус: апельсин и яблоко',
+        time: 4,
+        kcal: 140, protein: 2, fat: 0.5, carbs: 34,
+        mainCat: 'fruit',
+        tags: ['fruit'],
+        ingredients: [
+          { prodId: 'citrus_fruit', amount: 150 },
+          { prodId: 'apples', amount: 120 }
+        ],
+        steps: [
+          'Очистите апельсин или мандарины и подавайте с дольками яблока.'
+        ]
+      },
+      {
+        id: 's_hummus_veggies',
+        type: 'snack',
+        title: 'Овощные палочки из моркови и огурца с пастой из нута',
+        time: 6,
+        kcal: 175, protein: 7, fat: 6, carbs: 24,
+        mainCat: 'veg',
+        tags: ['veg', 'legumes'],
+        ingredients: [
+          { prodId: 'chickpeas', amount: 70 },
+          { prodId: 'carrots_onion', amount: 80 },
+          { prodId: 'tomatoes_cucumbers', amount: 80 },
+          { prodId: 'oil_spices', amount: 5 }
+        ],
+        steps: [
+          'Разомните консервированный нут вилкой или блендером с каплей масла и подавайте с палочками свежей моркови и огурца.'
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 4. APPLICATION STATE
+    // ==========================================
+    const state = {
+      currency: 'RUB',
+      budgetRub: 5500,
+      people: 2,
+      days: 7,
+      mealTypes: ['breakfast', 'lunch', 'dinner', 'snack'],
+      selectedStore: 'smart',
+      allergies: new Set(),
+      customBans: [],
+      categoryWeights: {
+        meat: 1,      // 0 = Меньше, 1 = Обычно, 2 = Больше
+        fish: 1,
+        veg: 1,
+        grains: 1,
+        dairy: 1,
+        legumes: 1,
+        fruit: 1
+      },
+      optimizeReuse: true,
+      products: JSON.parse(JSON.stringify(INITIAL_PRODUCTS)),
+      pantryIds: new Set(['oil_spices']), // Oil is often already at home
+      boughtIds: new Set(),
+      activeDayFilter: 'all',
+      plan: [], // Array of day objects: { dayNum, meals: { breakfast: recipeId, ... } }
+      seedOffset: 0
+    };
+
+    let chartCatInstance = null;
+    let chartStoreInstance = null;
+
+    // Load saved preferences from localStorage safely
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem('racion_budget_state_v1');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed.currency && CURRENCIES[parsed.currency]) state.currency = parsed.currency;
+        if (typeof parsed.budgetRub === 'number') state.budgetRub = parsed.budgetRub;
+        if (typeof parsed.people === 'number') state.people = Math.max(1, Math.min(10, parsed.people));
+        if (typeof parsed.days === 'number') state.days = parsed.days;
+        if (Array.isArray(parsed.mealTypes) && parsed.mealTypes.length) state.mealTypes = parsed.mealTypes;
+        if (parsed.selectedStore) state.selectedStore = parsed.selectedStore;
+        if (Array.isArray(parsed.allergies)) state.allergies = new Set(parsed.allergies);
+        if (Array.isArray(parsed.customBans)) state.customBans = parsed.customBans;
+        if (parsed.categoryWeights) state.categoryWeights = { ...state.categoryWeights, ...parsed.categoryWeights };
+        if (Array.isArray(parsed.pantryIds)) state.pantryIds = new Set(parsed.pantryIds);
+      } catch (e) {
+        // Ignore storage errors in sandboxed iframe
+      }
+    }
+
+    function saveState() {
+      try {
+        const payload = {
+          currency: state.currency,
+          budgetRub: state.budgetRub,
+          people: state.people,
+          days: state.days,
+          mealTypes: state.mealTypes,
+          selectedStore: state.selectedStore,
+          allergies: Array.from(state.allergies),
+          customBans: state.customBans,
+          categoryWeights: state.categoryWeights,
+          pantryIds: Array.from(state.pantryIds)
+        };
+        localStorage.setItem('racion_budget_state_v1', JSON.stringify(payload));
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
+
+    // ==========================================
+    // 5. FORMATTING & PRICE HELPERS
+    // ==========================================
+    function formatMoney(rubAmount) {
+      const curr = CURRENCIES[state.currency] || CURRENCIES.RUB;
+      const converted = Math.round(rubAmount * curr.rate);
+      return converted.toLocaleString('ru-RU') + ' ' + curr.symbol;
+    }
+
+    function getProductById(prodId) {
+      return state.products.find(p => p.id === prodId);
+    }
+
+    function getBestStoreForProduct(prod) {
+      let bestStore = 'pyaterochka';
+      let minPrice = Infinity;
+      for (const [stId, price] of Object.entries(prod.prices)) {
+        if (price < minPrice) {
+          minPrice = price;
+          bestStore = stId;
+        }
+      }
+      return { storeId: bestStore, price: minPrice };
+    }
+
+    function getProductPackPrice(prod, storeMode = state.selectedStore) {
+      if (!prod) return 0;
+      if (storeMode === 'smart') {
+        return getBestStoreForProduct(prod).price;
+      }
+      return prod.prices[storeMode] || getBestStoreForProduct(prod).price;
+    }
+
+    function getRecipePortionCostRub(recipe) {
+      let sum = 0;
+      for (const ing of recipe.ingredients) {
+        const prod = getProductById(ing.prodId);
+        if (!prod) continue;
+        const packPrice = getProductPackPrice(prod);
+        sum += (ing.amount / prod.packSize) * packPrice;
+      }
+      return sum;
+    }
+
+    function isRecipeAllowed(recipe) {
+      for (const ing of recipe.ingredients) {
+        const prod = getProductById(ing.prodId);
+        if (!prod) continue;
+        // Check allergen tags
+        for (const al of prod.allergens) {
+          if (state.allergies.has(al)) return false;
+        }
+        // Check custom bans against product name or recipe title
+        const prodNameLower = prod.name.toLowerCase();
+        const titleLower = recipe.title.toLowerCase();
+        for (const ban of state.customBans) {
+          const b = ban.toLowerCase().trim();
+          if (b && (prodNameLower.includes(b) || titleLower.includes(b))) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    // Score a recipe according to "Eat More / Eat Less" weights & budget target
+    function scoreRecipe(recipe, targetPortionBudgetRub, usedIngredientsSet) {
+      const w = state.categoryWeights[recipe.mainCat] ?? 1;
+      // Weight multiplier: 0 ("Меньше") -> -35, 1 ("Обычно") -> +10, 2 ("Больше") -> +45
+      let score = w === 0 ? -35 : (w === 2 ? 45 : 10);
+
+      // Also check secondary tags
+      for (const t of recipe.tags) {
+        const tw = state.categoryWeights[t] ?? 1;
+        if (tw === 2) score += 15;
+        if (tw === 0) score -= 20;
+      }
+
+      // Cost alignment
+      const portionCost = getRecipePortionCostRub(recipe);
+      if (portionCost <= targetPortionBudgetRub) {
+        score += 25;
+      } else {
+        const overRatio = (portionCost - targetPortionBudgetRub) / Math.max(30, targetPortionBudgetRub);
+        score -= Math.min(60, overRatio * 45);
+      }
+
+      // Ingredient reuse bonus if optimizeReuse enabled
+      if (state.optimizeReuse && usedIngredientsSet) {
+        let shared = 0;
+        for (const ing of recipe.ingredients) {
+          if (usedIngredientsSet.has(ing.prodId) || state.pantryIds.has(ing.prodId)) {
+            shared++;
+          }
+        }
+        score += shared * 8;
+      }
+
+      return score;
+    }
+
+    // ==========================================
+    // 6. SMART MEAL PLAN GENERATOR & BUDGET FITTER
+    // ==========================================
+    function generateMealPlan(strictCheaperMode = false) {
+      const totalMealSlots = Math.max(1, state.days * state.mealTypes.length * state.people);
+      const effectiveTargetPortion = (state.budgetRub / totalMealSlots) * (strictCheaperMode ? 0.65 : 0.95);
+
+      const usedIngs = new Set();
+      const newPlan = [];
+
+      for (let d = 1; d <= state.days; d++) {
+        const dayMeals = {};
+        for (const mType of state.mealTypes) {
+          let candidates = RECIPES.filter(r => r.type === mType && isRecipeAllowed(r));
+          // Fallback if user banned everything in this meal type
+          if (candidates.length === 0) {
+            candidates = RECIPES.filter(r => r.type === mType);
+          }
+
+          // Sort candidates by score + deterministic rotation across days
+          const scored = candidates.map((r, idx) => {
+            let s = scoreRecipe(r, effectiveTargetPortion, usedIngs);
+            if (strictCheaperMode) {
+              s -= getRecipePortionCostRub(r) * 0.8;
+            }
+            // Avoid repeating the exact same meal on consecutive days when possible
+            const prevDayMeal = d > 1 ? newPlan[d - 2]?.meals?.[mType] : null;
+            if (prevDayMeal === r.id && candidates.length > 1) {
+              s -= 40;
+            }
+            // Slight cyclic variety across days
+            const cycleBonus = ((d + idx + state.seedOffset) % candidates.length) * 3.5;
+            return { recipe: r, totalScore: s + cycleBonus };
+          });
+
+          scored.sort((a, b) => b.totalScore - a.totalScore);
+          const chosen = scored[0].recipe;
+          dayMeals[mType] = chosen.id;
+          for (const ing of chosen.ingredients) {
+            usedIngs.add(ing.prodId);
+          }
+        }
+        newPlan.push({ dayNum: d, meals: dayMeals });
+      }
+
+      state.plan = newPlan;
+
+      // Second pass: if total cart cost exceeds budget and not already in strict mode, swap costliest meals for cheaper allowed ones
+      let calc = calculateCartAndNutrition();
+      if (calc.totalCartRub > state.budgetRub) {
+        for (let pass = 0; pass < 8; pass++) {
+          calc = calculateCartAndNutrition();
+          if (calc.totalCartRub <= state.budgetRub) break;
+          // Find a meal slot with a cheaper alternative
+          let swapped = false;
+          for (let d = 0; d < state.plan.length; d++) {
+            for (const mType of state.mealTypes) {
+              const currId = state.plan[d].meals[mType];
+              const currRec = RECIPES.find(r => r.id === currId);
+              if (!currRec) continue;
+              const currCost = getRecipePortionCostRub(currRec);
+              const cheaperList = RECIPES.filter(r =>
+                r.type === mType &&
+                isRecipeAllowed(r) &&
+                getRecipePortionCostRub(r) < currCost - 8 &&
+                (state.categoryWeights[r.mainCat] ?? 1) > 0
+              ).sort((a, b) => getRecipePortionCostRub(a) - getRecipePortionCostRub(b));
+
+              if (cheaperList.length > 0) {
+                state.plan[d].meals[mType] = cheaperList[0].id;
+                swapped = true;
+                break;
+              }
+            }
+            if (swapped) break;
+          }
+          if (!swapped) break;
+        }
+      }
+
+      saveState();
+      renderAll();
+    }
+
+    function swapSingleMeal(dayIndex, mealType) {
+      const currentId = state.plan[dayIndex]?.meals?.[mealType];
+      let candidates = RECIPES.filter(r => r.type === mealType && isRecipeAllowed(r));
+      if (candidates.length === 0) candidates = RECIPES.filter(r => r.type === mealType);
+      const currIdx = candidates.findIndex(r => r.id === currentId);
+      const nextRec = candidates[(currIdx + 1) % candidates.length];
+      if (nextRec && state.plan[dayIndex]) {
+        state.plan[dayIndex].meals[mealType] = nextRec.id;
+        saveState();
+        renderAll();
+        showToast('Блюдо заменено: ' + nextRec.title);
+      }
+    }
+
+    // ==========================================
+    // 7. CART & NUTRITION AGGREGATION
+    // ==========================================
+    function calculateCartAndNutrition() {
+      const neededMap = new Map(); // prodId -> total grams/ml needed for all people & days
+      let totalKcalPerPerson = 0;
+      let totalProteinPerPerson = 0;
+      let totalFatPerPerson = 0;
+      let totalCarbsPerPerson = 0;
+      let totalMealsCount = 0;
+
+      for (const dayObj of state.plan) {
+        for (const mType of state.mealTypes) {
+          const recId = dayObj.meals[mType];
+          const rec = RECIPES.find(r => r.id === recId);
+          if (!rec) continue;
+          totalMealsCount++;
+          totalKcalPerPerson += rec.kcal;
+          totalProteinPerPerson += rec.protein;
+          totalFatPerPerson += rec.fat;
+          totalCarbsPerPerson += rec.carbs;
+
+          for (const ing of rec.ingredients) {
+            const prev = neededMap.get(ing.prodId) || 0;
+            neededMap.set(ing.prodId, prev + ing.amount * state.people);
+          }
+        }
+      }
+
+      const items = [];
+      let totalCartRub = 0;
+      let totalLeftoverValueRub = 0;
+      const storeTotals = {
+        smart: 0,
+        pyaterochka: 0,
+        magnit: 0,
+        lenta: 0,
+        auchan: 0,
+        perekrestok: 0,
+        vkusvill: 0
+      };
+      const categorySpend = {};
+
+      for (const [prodId, neededAmount] of neededMap.entries()) {
+        const prod = getProductById(prodId);
+        if (!prod) continue;
+        const packsNeeded = Math.max(1, Math.ceil(neededAmount / prod.packSize));
+        const totalPurchasedAmount = packsNeeded * prod.packSize;
+        const leftoverAmount = Math.max(0, totalPurchasedAmount - neededAmount);
+        const inPantry = state.pantryIds.has(prodId);
+
+        const bestInfo = getBestStoreForProduct(prod);
+        const unitPackPrice = getProductPackPrice(prod, state.selectedStore);
+        const chosenStoreId = state.selectedStore === 'smart' ? bestInfo.storeId : state.selectedStore;
+        const totalCostRub = inPantry ? 0 : packsNeeded * unitPackPrice;
+
+        if (!inPantry) {
+          totalCartRub += totalCostRub;
+          totalLeftoverValueRub += (leftoverAmount / prod.packSize) * unitPackPrice;
+          categorySpend[prod.cat] = (categorySpend[prod.cat] || 0) + totalCostRub;
+
+          // Store totals comparison
+          storeTotals.smart += packsNeeded * bestInfo.price;
+          for (const st of ['pyaterochka', 'magnit', 'lenta', 'auchan', 'perekrestok', 'vkusvill']) {
+            storeTotals[st] += packsNeeded * (prod.prices[st] || unitPackPrice);
+          }
+        }
+
+        items.push({
+          prod,
+          neededAmount: Math.round(neededAmount),
+          packsNeeded,
+          totalPurchasedAmount,
+          leftoverAmount: Math.round(leftoverAmount),
+          inPantry,
+          isBought: state.boughtIds.has(prodId),
+          chosenStoreId,
+          unitPackPrice,
+          totalCostRub
+        });
+      }
+
+      const daysCount = Math.max(1, state.days);
+      return {
+        items,
+        totalCartRub: Math.round(totalCartRub),
+        totalLeftoverValueRub: Math.round(totalLeftoverValueRub),
+        storeTotals,
+        categorySpend,
+        totalMealsCount,
+        avgKcal: Math.round(totalKcalPerPerson / daysCount),
+        avgProtein: Math.round(totalProteinPerPerson / daysCount),
+        avgFat: Math.round(totalFatPerPerson / daysCount),
+        avgCarbs: Math.round(totalCarbsPerPerson / daysCount)
+      };
+    }
+
+    // ==========================================
+    // 8. UI RENDERING FUNCTIONS
+    // ==========================================
+    function showToast(msg) {
+      const el = document.getElementById('toastNotification');
+      const txt = document.getElementById('toastText');
+      if (!el || !txt) return;
+      txt.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        el.classList.add('hidden');
+      }, 2400);
+    }
+
+    function renderStoresSelector() {
+      const container = document.getElementById('storeSelectorGrid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      STORES.forEach(st => {
+        const active = state.selectedStore === st.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `text-left p-3 rounded-xl border transition flex flex-col justify-between ${
+          active
+            ? 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20'
+            : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-1 w-full mb-1">
+            <span class="text-xs font-bold text-slate-900">${st.name}</span>
+            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">${st.badge}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-snug">${st.desc}</p>
+        `;
+        btn.addEventListener('click', () => {
+          state.selectedStore = st.id;
+          saveState();
+          renderAll();
+          showToast('Магазин выбран: ' + st.name);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function renderAllergyChips() {
+      const container = document.getElementById('allergyChipsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      ALLERGENS.forEach(al => {
+        const active = state.allergies.has(al.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center gap-1.5 ${
+          active
+            ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+        }`;
+        btn.innerHTML = `
+          <span>${al.name}</span>
+          ${active ? '<span class="text-[10px] bg-rose-800 px-1.5 py-0.2 rounded">Исключено</span>' : ''}
+        `;
+        btn.addEventListener('click', () => {
+          if (state.allergies.has(al.id)) {
+            state.allergies.delete(al.id);
+          } else {
+            state.allergies.add(al.id);
+          }
+          generateMealPlan();
+        });
+        container.appendChild(btn);
+      });
+
+      // Render custom ban tags
+      const customContainer = document.getElementById('customBanTags');
+      if (customContainer) {
+        customContainer.innerHTML = '';
+        state.customBans.forEach((ban, idx) => {
+          const pill = document.createElement('span');
+          pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 text-xs font-semibold';
+          pill.innerHTML = `<span>🚫 ${ban}</span>`;
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'text-rose-700 hover:text-rose-950 font-bold';
+          delBtn.textContent = '×';
+          delBtn.addEventListener('click', () => {
+            state.customBans.splice(idx, 1);
+            generateMealPlan();
+          });
+          pill.appendChild(delBtn);
+          customContainer.appendChild(pill);
+        });
+      }
+    }
+
+    function renderCategoryWeights() {
+      const container = document.getElementById('categoryWeightsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const levels = [
+        { val: 0, label: 'Меньше', activeClass: 'bg-amber-600 text-white' },
+        { val: 1, label: 'Обычно', activeClass: 'bg-slate-800 text-white' },
+        { val: 2, label: 'Больше', activeClass: 'bg-emerald-600 text-white' }
+      ];
+
+      FOOD_CATEGORIES.forEach(cat => {
+        const currentWeight = state.categoryWeights[cat.id] ?? 1;
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-2';
+
+        const top = document.createElement('div');
+        top.innerHTML = `
+          <div class="text-xs font-bold text-slate-900">${cat.name}</div>
+          <div class="text-[11px] text-slate-500">${cat.desc}</div>
+        `;
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'grid grid-cols-3 gap-1 bg-white p-1 rounded-lg border border-slate-200';
+
+        levels.forEach(lv => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          const isSelected = currentWeight === lv.val;
+          b.className = `py-1 rounded-md text-[11px] font-semibold transition ${
+            isSelected ? lv.activeClass : 'text-slate-600 hover:bg-slate-100'
+          }`;
+          b.textContent = lv.label;
+          b.addEventListener('click', () => {
+            state.categoryWeights[cat.id] = lv.val;
+            generateMealPlan();
+          });
+          btnGroup.appendChild(b);
+        });
+
+        card.appendChild(top);
+        card.appendChild(btnGroup);
+        container.appendChild(card);
+      });
+    }
+
+    function renderMenuTab() {
+      const pillsContainer = document.getElementById('dayFilterPills');
+      const daysContainer = document.getElementById('daysMenuContainer');
+      if (!pillsContainer || !daysContainer) return;
+
+      pillsContainer.innerHTML = '';
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = `px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+        state.activeDayFilter === 'all'
+          ? 'bg-slate-900 text-white'
+          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+      }`;
+      allBtn.textContent = `Все дни (${state.days})`;
+      allBtn.addEventListener('click', () => {
+        state.activeDayFilter = 'all';
+        renderMenuTab();
+      });
+      pillsContainer.appendChild(allBtn);
+
+      for (let d = 1; d <= state.days; d++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+          state.activeDayFilter === d
+            ? 'bg-emerald-600 text-white'
+            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+        }`;
+        b.textContent = `День ${d}`;
+        b.addEventListener('click', () => {
+          state.activeDayFilter = d;
+          renderMenuTab();
+        });
+        pillsContainer.appendChild(b);
+      }
+
+      daysContainer.innerHTML = '';
+      const mealTypeLabels = {
+        breakfast: { name: 'Завтрак', badgeClass: 'bg-amber-100 text-amber-800' },
+        lunch: { name: 'Обед', badgeClass: 'bg-emerald-100 text-emerald-800' },
+        dinner: { name: 'Ужин', badgeClass: 'bg-blue-100 text-blue-800' },
+        snack: { name: 'Перекус', badgeClass: 'bg-purple-100 text-purple-800' }
+      };
+
+      state.plan.forEach((dayObj, dIdx) => {
+        if (state.activeDayFilter !== 'all' && state.activeDayFilter !== dayObj.dayNum) return;
+
+        let dayKcal = 0;
+        let dayCostRub = 0;
+
+        const daySection = document.createElement('div');
+        daySection.className = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4';
+
+        const cardsGrid = document.createElement('div');
+        cardsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5';
+
+        state.mealTypes.forEach(mType => {
+          const recId = dayObj.meals[mType];
+          const rec = RECIPES.find(r => r.id === recId);
+          if (!rec) return;
+
+          const portionRub = getRecipePortionCostRub(rec);
+          dayKcal += rec.kcal;
+          dayCostRub += portionRub * state.people;
+
+          const mInfo = mealTypeLabels[mType] || { name: mType, badgeClass: 'bg-slate-100 text-slate-800' };
+
+          const card = document.createElement('div');
+          card.className = 'rounded-xl border border-slate-200 p-3.5 flex flex-col justify-between bg-slate-50/60 hover:bg-white hover:shadow-sm transition';
+
+          const ingSummary = rec.ingredients.map(ing => {
+            const p = getProductById(ing.prodId);
+            return p ? `${p.name} (${ing.amount * state.people} ${p.unit})` : '';
+          }).filter(Boolean).join(', ');
+
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md ${mInfo.badgeClass}">${mInfo.name}</span>
+                <span class="text-xs font-extrabold text-emerald-700">${formatMoney(portionRub)} / порц.</span>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 leading-snug mb-1.5">${rec.title}</h4>
+              <p class="text-[11px] text-slate-500 line-clamp-2 mb-3">${ingSummary}</p>
+            </div>
+            <div class="pt-2 border-t border-slate-200/80 space-y-2">
+              <div class="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                <span>🔥 ${rec.kcal} ккал</span>
+                <span>Б:${rec.protein} Ж:${rec.fat} У:${rec.carbs}</span>
+                <span>⏱ ${rec.time}м</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" class="btn-open-recipe text-[11px] font-semibold py-1.5 px-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+                  📖 Рецепт
+                </button>
+                <button type="button" class="btn-swap-recipe text-[11px] font-semibold py-1.5 px-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 transition">
+                  🔄 Заменить
+                </button>
+              </div>
+            </div>
+          `;
+
+          card.querySelector('.btn-open-recipe').addEventListener('click', () => openRecipeModal(rec, mInfo.name));
+          card.querySelector('.btn-swap-recipe').addEventListener('click', () => swapSingleMeal(dIdx, mType));
+
+          cardsGrid.appendChild(card);
+        });
+
+        const headerBar = document.createElement('div');
+        headerBar.className = 'flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100';
+        headerBar.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white text-xs font-extrabold flex items-center justify-center">${dayObj.dayNum}</span>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900">День ${dayObj.dayNum}</h3>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-slate-600">
+            <span>На 1 чел.: <strong>${dayKcal} ккал</strong></span>
+            <span>•</span>
+            <span>Бюджет дня (${state.people} перс.): <strong class="text-emerald-700">${formatMoney(dayCostRub)}</strong></span>
+          </div>
+        `;
+
+        daySection.appendChild(headerBar);
+        daySection.appendChild(cardsGrid);
+        daysContainer.appendChild(daySection);
+      });
+    }
+
+    function openRecipeModal(recipe, mealLabel) {
+      const modal = document.getElementById('recipeModal');
+      if (!modal) return;
+      document.getElementById('modalMealTypeBadge').textContent = mealLabel;
+      document.getElementById('modalRecipeTitle').textContent = recipe.title;
+      document.getElementById('modalPeopleSpan').textContent = state.people;
+
+      const portionCost = getRecipePortionCostRub(recipe);
+      document.getElementById('modalRecipeStats').innerHTML = `
+        <div><span class="block text-slate-400">Калории</span><strong class="text-slate-900">${recipe.kcal} ккал</strong></div>
+        <div><span class="block text-slate-400">Б / Ж / У</span><strong class="text-slate-900">${recipe.protein}/${recipe.fat}/${recipe.carbs} г</strong></div>
+        <div><span class="block text-slate-400">Время</span><strong class="text-slate-900">${recipe.time} мин</strong></div>
+        <div><span class="block text-slate-400">Порция</span><strong class="text-emerald-700">${formatMoney(portionCost)}</strong></div>
+      `;
+
+      const ingList = document.getElementById('modalIngredientsList');
+      ingList.innerHTML = '';
+      recipe.ingredients.forEach(ing => {
+        const p = getProductById(ing.prodId);
+        if (!p) return;
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center';
+        li.innerHTML = `
+          <span>• ${p.name}</span>
+          <span class="font-bold text-slate-900">${ing.amount * state.people} ${p.unit}</span>
+        `;
+        ingList.appendChild(li);
+      });
+
+      const stepsList = document.getElementById('modalStepsList');
+      stepsList.innerHTML = '';
+      recipe.steps.forEach(st => {
+        const li = document.createElement('li');
+        li.textContent = st;
+        stepsList.appendChild(li);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    function renderShoppingTab(calc) {
+      const storeRow = document.getElementById('storeComparisonRow');
+      if (storeRow) {
+        storeRow.innerHTML = '';
+        STORES.forEach(st => {
+          const totalRub = calc.storeTotals[st.id] || 0;
+          const active = state.selectedStore === st.id;
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `p-3 rounded-xl border text-left transition ${
+            active
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+              : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
+          }`;
+          card.innerHTML = `
+            <div class="text-[11px] font-semibold ${active ? 'text-emerald-100' : 'text-slate-500'}">${st.name}</div>
+            <div class="text-sm font-extrabold mt-0.5">${formatMoney(totalRub)}</div>
+          `;
+          card.addEventListener('click', () => {
+            state.selectedStore = st.id;
+            saveState();
+            renderAll();
+          });
+          storeRow.appendChild(card);
+        });
+      }
+
+      const deptContainer = document.getElementById('shoppingDepartmentsContainer');
+      if (!deptContainer) return;
+      deptContainer.innerHTML = '';
+
+      const catNames = {
+        meat: '🥩 Мясо и птица',
+        fish: '🐟 Рыба и морепродукты',
+        dairy: '🥛 Молочные продукты, сыры и яйца',
+        grains: '🥣 Крупы, макароны и хлеб',
+        veg: '🥦 Свежие овощи и зелень',
+        fruit: '🍎 Фрукты и ягоды',
+        legumes: '🫘 Бобовые, тофу и орехи',
+        pantry: '🫙 Бакалея, масла и соусы'
+      };
+
+      const grouped = {};
+      calc.items.forEach(item => {
+        const c = item.prod.cat || 'pantry';
+        if (!grouped[c]) grouped[c] = [];
+        grouped[c].push(item);
+      });
+
+      Object.keys(grouped).forEach(catKey => {
+        const box = document.createElement('div');
+        box.className = 'bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3';
+        const title = catNames[catKey] || catKey;
+
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between border-b border-slate-100 pb-2';
+        header.innerHTML = `
+          <h3 class="text-sm font-bold text-slate-900">${title}</h3>
+          <span class="text-xs text-slate-500">${grouped[catKey].length} поз.</span>
+        `;
+        box.appendChild(header);
+
+        const list = document.createElement('div');
+        list.className = 'divide-y divide-slate-100';
+
+        grouped[catKey].forEach(item => {
+          const stObj = STORES.find(s => s.id === item.chosenStoreId);
+          const storeBadge = stObj ? stObj.name : item.chosenStoreId;
+
+          const row = document.createElement('div');
+          row.className = `py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs ${
+            item.inPantry ? 'opacity-60' : ''
+          }`;
+
+          const left = document.createElement('div');
+          left.className = 'flex items-center gap-2.5';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = item.isBought || item.inPantry;
+          cb.className = 'w-4 h-4 accent-emerald-600 rounded cursor-pointer';
+          cb.addEventListener('change', () => {
+            if (cb.checked) state.boughtIds.add(item.prod.id);
+            else state.boughtIds.delete(item.prod.id);
+            renderAll();
+          });
+
+          const textDiv = document.createElement('div');
+          textDiv.innerHTML = `
+            <div class="font-bold text-slate-900 ${item.isBought ? 'line-through text-slate-400' : ''}">
+              ${item.prod.name}
+              <span class="ml-1.5 text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${storeBadge}</span>
+            </div>
+            <div class="text-[11px] text-slate-500">
+              Нужно по рецептам: <strong>${item.neededAmount} ${item.prod.unit}</strong> · К покупке: <strong>${item.packsNeeded} уп. × ${item.prod.packSize} ${item.prod.unit}</strong>
+              ${item.leftoverAmount > 0 ? `(останется запас ${item.leftoverAmount} ${item.prod.unit})` : ''}
+            </div>
+          `;
+
+          left.appendChild(cb);
+          left.appendChild(textDiv);
+
+          const right = document.createElement('div');
+          right.className = 'flex items-center gap-2';
+
+          const pantryBtn = document.createElement('button');
+          pantryBtn.type = 'button';
+          pantryBtn.className = `px-2 py-1 rounded-lg text-[11px] font-semibold border transition ${
+            item.inPantry
+              ? 'bg-blue-50 border-blue-300 text-blue-800'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+          }`;
+          pantryBtn.textContent = item.inPantry ? '🏠 Есть дома (0)' : 'Отметить «Дома»';
+          pantryBtn.addEventListener('click', () => {
+            if (state.pantryIds.has(item.prod.id)) state.pantryIds.delete(item.prod.id);
+            else state.pantryIds.add(item.prod.id);
+            saveState();
+            renderAll();
+          });
+
+          const priceSpan = document.createElement('span');
+          priceSpan.className = 'font-extrabold text-sm text-slate-900 min-w-[70px] text-right';
+          priceSpan.textContent = item.inPantry ? '0 ' + CURRENCIES[state.currency].symbol : formatMoney(item.totalCostRub);
+
+          right.appendChild(pantryBtn);
+          right.appendChild(priceSpan);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          list.appendChild(row);
+        });
+
+        box.appendChild(list);
+        deptContainer.appendChild(box);
+      });
+
+      // Right sidebar summary
+      const activeSt = STORES.find(s => s.id === state.selectedStore);
+      document.getElementById('summaryStoreName').textContent = activeSt ? activeSt.name : 'Умная выгода';
+      document.getElementById('summaryTotalItems').textContent = calc.items.filter(i => !i.inPantry).length;
+      document.getElementById('summaryBoughtItems').textContent = calc.items.filter(i => i.isBought && !i.inPantry).length;
+      document.getElementById('summaryPantryItems').textContent = calc.items.filter(i => i.inPantry).length;
+      document.getElementById('summaryFinalTotal').textContent = formatMoney(calc.totalCartRub);
+      document.getElementById('summaryLeftoverValue').textContent = formatMoney(calc.totalLeftoverValueRub);
+    }
+
+    function renderCatalogTab() {
+      const tbody = document.getElementById('catalogTableBody');
+      if (!tbody) return;
+      const searchVal = (document.getElementById('inputSearchCatalog')?.value || '').toLowerCase().trim();
+      const catFilter = document.getElementById('selectFilterCategory')?.value || 'all';
+
+      const catLabels = {
+        meat: 'Мясо и птица',
+        fish: 'Рыба',
+        dairy: 'Молочка и яйца',
+        grains: 'Крупы и хлеб',
+        veg: 'Овощи',
+        fruit: 'Фрукты',
+        legumes: 'Бобовые и орехи',
+        pantry: 'Бакалея'
+      };
+
+      tbody.innerHTML = '';
+      state.products.forEach(prod => {
+        if (catFilter !== 'all' && prod.cat !== catFilter) return;
+        if (searchVal && !prod.name.toLowerCase().includes(searchVal)) return;
+
+        const inPantry = state.pantryIds.has(prod.id);
+        const best = getBestStoreForProduct(prod);
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+
+        const tdCheck = document.createElement('td');
+        tdCheck.className = 'py-2.5 px-3';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = inPantry;
+        cb.className = 'w-4 h-4 accent-emerald-600 rounded cursor-pointer';
+        cb.addEventListener('change', () => {
+          if (cb.checked) state.pantryIds.add(prod.id);
+          else state.pantryIds.delete(prod.id);
+          saveState();
+          renderAll();
+        });
+        tdCheck.appendChild(cb);
+        tr.appendChild(tdCheck);
+
+        const tdName = document.createElement('td');
+        tdName.className = 'py-2.5 px-3 font-bold text-slate-900';
+        tdName.textContent = prod.name;
+        tr.appendChild(tdName);
+
+        const tdCat = document.createElement('td');
+        tdCat.className = 'py-2.5 px-3 text-slate-500';
+        tdCat.textContent = catLabels[prod.cat] || prod.cat;
+        tr.appendChild(tdCat);
+
+        const tdPack = document.createElement('td');
+        tdPack.className = 'py-2.5 px-3 text-slate-600';
+        tdPack.textContent = `${prod.packSize} ${prod.unit}`;
+        tr.appendChild(tdPack);
+
+        ['pyaterochka', 'magnit', 'lenta', 'auchan', 'perekrestok', 'vkusvill'].forEach(stKey => {
+          const tdP = document.createElement('td');
+          const price = prod.prices[stKey] || 0;
+          const isBest = price === best.price;
+          tdP.className = `py-2.5 px-3 ${isBest ? 'font-extrabold text-emerald-700 bg-emerald-50/60' : 'text-slate-700'}`;
+          tdP.textContent = formatMoney(price);
+          tr.appendChild(tdP);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAnalyticsCharts(calc) {
+      if (typeof Chart === 'undefined') return;
+
+      const catLabelsMap = {
+        meat: 'Мясо и птица',
+        fish: 'Рыба и морепродукты',
+        dairy: 'Молочка и яйца',
+        grains: 'Крупы и хлеб',
+        veg: 'Овощи и зелень',
+        fruit: 'Фрукты',
+        legumes: 'Бобовые и орехи',
+        pantry: 'Бакалея'
+      };
+
+      const catKeys = Object.keys(calc.categorySpend);
+      const catNames = catKeys.map(k => catLabelsMap[k] || k);
+      const currRate = (CURRENCIES[state.currency] || CURRENCIES.RUB).rate;
+      const catValues = catKeys.map(k => Math.round(calc.categorySpend[k] * currRate));
+
+      const ctx1 = document.getElementById('chartCategorySpend');
+      if (ctx1) {
+        if (chartCatInstance) chartCatInstance.destroy();
+        chartCatInstance = new Chart(ctx1, {
+          type: 'doughnut',
+          data: {
+            labels: catNames,
+            datasets: [{
+              data: catValues,
+              backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#64748b'],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+
+      const ctx2 = document.getElementById('chartStoreComparison');
+      if (ctx2) {
+        if (chartStoreInstance) chartStoreInstance.destroy();
+        const storeIds = ['smart', 'auchan', 'lenta', 'magnit', 'pyaterochka', 'perekrestok', 'vkusvill'];
+        const storeLabels = storeIds.map(id => STORES.find(s => s.id === id)?.name || id);
+        const storeData = storeIds.map(id => Math.round((calc.storeTotals[id] || 0) * currRate));
+
+        chartStoreInstance = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: storeLabels,
+            datasets: [{
+              label: `Стоимость корзины (${CURRENCIES[state.currency].symbol})`,
+              data: storeData,
+              backgroundColor: storeIds.map(id => id === state.selectedStore ? '#059669' : '#94a3b8'),
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+    }
+
+    function renderKPIsAndHeader(calc) {
+      const budgetRub = state.budgetRub;
+      const diffRub = budgetRub - calc.totalCartRub;
+      const isUnder = diffRub >= 0;
+
+      document.getElementById('headerCartCost').textContent = formatMoney(calc.totalCartRub);
+      document.getElementById('headerBudgetLimit').textContent = formatMoney(budgetRub);
+
+      const headerBadge = document.getElementById('headerBudgetBadge');
+      if (isUnder) {
+        headerBadge.textContent = `В бюджете (−${formatMoney(diffRub)})`;
+        headerBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800';
+      } else {
+        headerBadge.textContent = `Перерасход +${formatMoney(Math.abs(diffRub))}`;
+        headerBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800';
+      }
+
+      const activeSt = STORES.find(s => s.id === state.selectedStore);
+      document.getElementById('kpiStoreLabel').textContent = activeSt ? activeSt.name : 'Умная выгода';
+      document.getElementById('kpiTotalCost').textContent = formatMoney(calc.totalCartRub);
+
+      const kpiDiffEl = document.getElementById('kpiBudgetDiff');
+      if (isUnder) {
+        kpiDiffEl.textContent = `остаток ${formatMoney(diffRub)}`;
+        kpiDiffEl.className = 'text-xs font-semibold text-emerald-600';
+      } else {
+        kpiDiffEl.textContent = `выше на ${formatMoney(Math.abs(diffRub))}`;
+        kpiDiffEl.className = 'text-xs font-semibold text-rose-600';
+      }
+
+      const pct = Math.min(100, Math.round((calc.totalCartRub / Math.max(1, budgetRub)) * 100));
+      const bar = document.getElementById('kpiBudgetBar');
+      bar.style.width = pct + '%';
+      bar.className = `h-full rounded-full transition-all duration-300 ${isUnder ? 'bg-emerald-500' : 'bg-rose-500'}`;
+
+      document.getElementById('kpiPeopleBadge').textContent = `${state.people} перс. · ${state.days} дн.`;
+      const perPersonDayRub = calc.totalCartRub / Math.max(1, state.people * state.days);
+      document.getElementById('kpiCostPerPersonDay').textContent = formatMoney(perPersonDayRub);
+
+      const totalPortions = Math.max(1, calc.totalMealsCount * state.people);
+      const perPortionRub = calc.totalCartRub / totalPortions;
+      document.getElementById('kpiCostPerPortion').innerHTML = `Средняя цена порции: <strong class="text-slate-800">${formatMoney(perPortionRub)}</strong>`;
+
+      document.getElementById('kpiAvgKcal').textContent = calc.avgKcal;
+      document.getElementById('kpiAvgMacros').innerHTML = `Б: <strong class="text-slate-800">${calc.avgProtein}г</strong> · Ж: <strong class="text-slate-800">${calc.avgFat}г</strong> · У: <strong class="text-slate-800">${calc.avgCarbs}г</strong>`;
+
+      const restrictionsCount = state.allergies.size + state.customBans.length + Object.values(state.categoryWeights).filter(v => v !== 1).length;
+      document.getElementById('kpiExcludedCount').textContent = restrictionsCount;
+      document.getElementById('kpiPantrySaved').innerHTML = `Дома в кладовой: <strong class="text-slate-800">${state.pantryIds.size} прод.</strong>`;
+
+      document.getElementById('badgeMealsCount').textContent = calc.totalMealsCount;
+      document.getElementById('badgeCartCount').textContent = calc.items.filter(i => !i.inPantry).length;
+    }
+
+    function renderAll() {
+      const calc = calculateCartAndNutrition();
+      renderKPIsAndHeader(calc);
+      renderStoresSelector();
+      renderAllergyChips();
+      renderCategoryWeights();
+      renderMenuTab();
+      renderShoppingTab(calc);
+      renderCatalogTab();
+      renderAnalyticsCharts(calc);
+    }
+
+    // ==========================================
+    // 9. EVENT LISTENERS & INITIALIZATION
+    // ==========================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.id !== tabId);
+      });
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        const isTarget = btn.getAttribute('data-tab') === tabId;
+        btn.classList.toggle('border-emerald-600', isTarget);
+        btn.classList.toggle('text-emerald-700', isTarget);
+        btn.classList.toggle('border-transparent', !isTarget);
+        btn.classList.toggle('text-slate-600', !isTarget);
+      });
+      if (tabId === 'tab-analytics') {
+        renderAnalyticsCharts(calculateCartAndNutrition());
+      }
+    }
+
+    function syncBudgetInputsFromState() {
+      const curr = CURRENCIES[state.currency] || CURRENCIES.RUB;
+      document.getElementById('selectCurrency').value = state.currency;
+      document.getElementById('currencySymbolLabel').textContent = curr.symbol;
+
+      const rangeEl = document.getElementById('inputBudgetRange');
+      const numEl = document.getElementById('inputBudgetNumber');
+      rangeEl.min = curr.min;
+      rangeEl.max = curr.max;
+      rangeEl.step = curr.step;
+
+      const convertedVal = Math.round(state.budgetRub * curr.rate);
+      rangeEl.value = convertedVal;
+      numEl.value = convertedVal;
+      document.getElementById('labelPeopleCount').textContent = state.people;
+      document.getElementById('selectDaysCount').value = String(state.days);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      syncBudgetInputsFromState();
+
+      // Tab navigation
+      document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      // Currency selector
+      document.getElementById('selectCurrency').addEventListener('change', (e) => {
+        state.currency = e.target.value;
+        syncBudgetInputsFromState();
+        saveState();
+        renderAll();
+      });
+
+      // Budget slider & number input
+      const rangeEl = document.getElementById('inputBudgetRange');
+      const numEl = document.getElementById('inputBudgetNumber');
+
+      rangeEl.addEventListener('input', () => {
+        const curr = CURRENCIES[state.currency] || CURRENCIES.RUB;
+        numEl.value = rangeEl.value;
+        state.budgetRub = Math.round(Number(rangeEl.value) / curr.rate);
+        generateMealPlan();
+      });
+
+      numEl.addEventListener('change', () => {
+        const curr = CURRENCIES[state.currency] || CURRENCIES.RUB;
+        const val = Math.max(curr.min, Number(numEl.value) || curr.min);
+        numEl.value = val;
+        rangeEl.value = Math.min(curr.max, val);
+        state.budgetRub = Math.round(val / curr.rate);
+        generateMealPlan();
+      });
+
+      // People +/- buttons
+      document.getElementById('btnPeopleMinus').addEventListener('click', () => {
+        if (state.people > 1) {
+          state.people--;
+          document.getElementById('labelPeopleCount').textContent = state.people;
+          generateMealPlan();
+        }
+      });
+
+      document.getElementById('btnPeoplePlus').addEventListener('click', () => {
+        if (state.people < 10) {
+          state.people++;
+          document.getElementById('labelPeopleCount').textContent = state.people;
+          generateMealPlan();
+        }
+      });
+
+      // Days selector
+      document.getElementById('selectDaysCount').addEventListener('change', (e) => {
+        state.days = Number(e.target.value) || 7;
+        state.activeDayFilter = 'all';
+        generateMealPlan();
+      });
+
+      // Meal types checkboxes
+      document.querySelectorAll('.meal-type-cb').forEach(cb => {
+        cb.checked = state.mealTypes.includes(cb.value);
+        cb.addEventListener('change', () => {
+          const checked = Array.from(document.querySelectorAll('.meal-type-cb'))
+            .filter(el => el.checked)
+            .map(el => el.value);
+          if (checked.length === 0) {
+            cb.checked = true;
+            showToast('Должен быть выбран хотя бы один приём пищи');
+            return;
+          }
+          state.mealTypes = checked;
+          generateMealPlan();
+        });
+      });
+
+      // Clear allergies
+      document.getElementById('btnClearAllergies').addEventListener('click', () => {
+        state.allergies.clear();
+        state.customBans = [];
+        generateMealPlan();
+        showToast('Все ограничения по аллергиям сброшены');
+      });
+
+      // Custom ban input
+      const addCustomBanHandler = () => {
+        const inp = document.getElementById('inputCustomBan');
+        const raw = inp.value.trim();
+        if (!raw) return;
+        raw.split(',').forEach(part => {
+          const clean = part.trim();
+          if (clean && !state.customBans.includes(clean)) {
+            state.customBans.push(clean);
+          }
+        });
+        inp.value = '';
+        generateMealPlan();
+        showToast('Стоп-продукты обновлены');
+      };
+
+      document.getElementById('btnAddCustomBan').addEventListener('click', addCustomBanHandler);
+      document.getElementById('inputCustomBan').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addCustomBanHandler();
+        }
+      });
+
+      // Quick Presets for "Eat More / Eat Less"
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = btn.getAttribute('data-preset');
+          if (p === 'balanced') {
+            state.categoryWeights = { meat: 1, fish: 1, veg: 1, grains: 1, dairy: 1, legumes: 1, fruit: 1 };
+          } else if (p === 'highprotein') {
+            state.categoryWeights = { meat: 2, fish: 2, veg: 2, grains: 1, dairy: 2, legumes: 1, fruit: 0 };
+          } else if (p === 'budgetmax') {
+            state.categoryWeights = { meat: 1, fish: 0, veg: 2, grains: 2, dairy: 1, legumes: 2, fruit: 1 };
+          } else if (p === 'veggie') {
+            state.categoryWeights = { meat: 0, fish: 0, veg: 2, grains: 2, dairy: 1, legumes: 2, fruit: 2 };
+          }
+          generateMealPlan();
+          showToast('Применён профиль предпочтений');
+        });
+      });
+
+      // Optimize reuse checkbox
+      document.getElementById('cbOptimizeReuse').addEventListener('change', (e) => {
+        state.optimizeReuse = e.target.checked;
+        generateMealPlan();
+      });
+
+      // Action buttons
+      document.getElementById('btnGenerateAndViewMenu').addEventListener('click', () => {
+        state.seedOffset++;
+        generateMealPlan();
+        switchTab('tab-menu');
+        showToast('Рацион сформирован под ваш бюджет!');
+      });
+
+      document.getElementById('btnQuickGenerate').addEventListener('click', () => {
+        state.seedOffset++;
+        generateMealPlan();
+        showToast('Меню обновлено!');
+      });
+
+      document.getElementById('btnRegenerateMenuTab').addEventListener('click', () => {
+        state.seedOffset++;
+        generateMealPlan();
+        showToast('Подобран новый вариант рациона');
+      });
+
+      document.getElementById('btnFitStrictlyBudget').addEventListener('click', () => {
+        state.seedOffset++;
+        generateMealPlan(true);
+        showToast('Выбраны самые экономные блюда');
+      });
+
+      document.getElementById('btnGoToShopping').addEventListener('click', () => {
+        switchTab('tab-shopping');
+      });
+
+      // Copy shopping list
+      document.getElementById('btnCopyShoppingList').addEventListener('click', () => {
+        const calc = calculateCartAndNutrition();
+        const lines = [
+          `🛒 СПИСОК ПОКУПОК (${state.people} перс., ${state.days} дн.)`,
+          `Магазин: ${STORES.find(s => s.id === state.selectedStore)?.name || 'Умная выгода'}`,
+          `Итого по чеку: ${formatMoney(calc.totalCartRub)}`,
+          ''
+        ];
+        calc.items.filter(i => !i.inPantry).forEach(i => {
+          lines.push(`☐ ${i.prod.name}: ${i.packsNeeded} уп. (${i.totalPurchasedAmount} ${i.prod.unit}) — ${formatMoney(i.totalCostRub)}`);
+        });
+        const text = lines.join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast('Список покупок скопирован в буфер обмена!')).catch(() => fallbackCopy(text));
+        } else {
+          fallbackCopy(text);
+        }
+      });
+
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Список покупок скопирован!');
+        } catch (e) {
+          showToast('Готово');
+        }
+        document.body.removeChild(ta);
+      }
+
+      document.getElementById('btnResetBought').addEventListener('click', () => {
+        state.boughtIds.clear();
+        renderAll();
+        showToast('Отметки покупок сброшены');
+      });
+
+      // Catalog search & filter
+      document.getElementById('inputSearchCatalog').addEventListener('input', renderCatalogTab);
+      document.getElementById('selectFilterCategory').addEventListener('change', renderCatalogTab);
+
+      // Add custom product to database
+      document.getElementById('btnAddNewProduct').addEventListener('click', () => {
+        const name = document.getElementById('newProdName').value.trim();
+        const cat = document.getElementById('newProdCat').value;
+        const pack = Number(document.getElementById('newProdPack').value) || 500;
+        const price = Number(document.getElementById('newProdPrice').value) || 199;
+        if (!name) {
+          showToast('Введите название продукта');
+          return;
+        }
+        const id = 'custom_' + Date.now();
+        state.products.unshift({
+          id,
+          name,
+          cat,
+          unit: 'г',
+          packSize: pack,
+          allergens: [],
+          prices: {
+            pyaterochka: price,
+            magnit: Math.round(price * 0.98),
+            lenta: Math.round(price * 0.95),
+            auchan: Math.round(price * 0.94),
+            perekrestok: Math.round(price * 1.06),
+            vkusvill: Math.round(price * 1.15)
+          }
+        });
+        document.getElementById('newProdName').value = '';
+        renderCatalogTab();
+        showToast('Продукт добавлен в каталог: ' + name);
+      });
+
+      // Modal close handlers
+      const closeModal = () => document.getElementById('recipeModal').classList.add('hidden');
+      document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+      document.getElementById('btnModalCloseBottom').addEventListener('click', closeModal);
+      document.getElementById('recipeModal').addEventListener('click', (e) => {
+        if (e.target.id === 'recipeModal') closeModal();
+      });
+
+      // Initial generation
+      generateMealPlan();
+    });
+  </script>
+</body>
+</html>

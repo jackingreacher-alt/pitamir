@@ -1,0 +1,9 @@
+{
+  "name": "РационБюджет — Умный конструктор меню и покупок",
+  "short_name": "РационБюджет",
+  "description": "Персональное меню по бюджету, магазинам, аллергиям и вкусам",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669"
+}
